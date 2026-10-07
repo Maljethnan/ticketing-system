@@ -1,0 +1,87 @@
+@page "/"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="dashboard-page">
+    <h1 class="page-title">لوحة التحكم</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-open">
+            <div class="stat-icon">📋</div>
+            <div class="stat-content">
+                <span class="stat-number">@_stats?.OpenCount ?? 0</span>
+                <span class="stat-label">تذاكر مفتوحة</span>
+            </div>
+        </div>
+        <div class="stat-card stat-progress">
+            <div class="stat-icon">🔧</div>
+            <div class="stat-content">
+                <span class="stat-number">@_stats?.InProgressCount ?? 0</span>
+                <span class="stat-label">قيد المعالجة</span>
+            </div>
+        </div>
+        <div class="stat-card stat-closed">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <span class="stat-number">@_stats?.ClosedCount ?? 0</span>
+                <span class="stat-label">مغلقة هذا الشهر</span>
+            </div>
+        </div>
+        <div class="stat-card stat-sla">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <span class="stat-number">@_stats?.SLABreachedCount ?? 0</span>
+                <span class="stat-label">متأخرة عن SLA</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="section">
+        <div class="section-header">
+            <h2>آخر التذاكر المفتوحة</h2>
+            <a href="/tickets" class="btn btn-outline">عرض الكل ←</a>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead><tr><th>رقم التذكرة</th><th>العنوان</th><th>النظام</th><th>الحالة</th><th>الأولوية</th><th>المختص</th><th>التاريخ</th></tr></thead>
+                <tbody>
+                    @foreach (var ticket in (_recentTickets ?? new()).Take(10))
+                    {
+                        <tr @onclick="() => Navigation.NavigateTo($"/tickets/{ticket.TicketId}")" class="clickable">
+                            <td class="ticket-number">@ticket.TicketNumber</td>
+                            <td>@ticket.Title</td>
+                            <td>@ticket.SystemName</td>
+                            <td><span class="status-badge status-@GetStatusClass(ticket.StatusName)">@ticket.StatusName</span></td>
+                            <td><span class="priority-badge" style="background-color:@ticket.PriorityColor;color:white">@ticket.PriorityName</span></td>
+                            <td>@ticket.AssignedToName</td>
+                            <td>@ticket.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>إحصائيات سريعة</h2>
+        <div class="quick-stats">
+            <div class="quick-stat-item"><span class="label">متوسط وقت الحل:</span><span class="value">@_stats?.AvgResolutionHours.ToString("F1") ساعة</span></div>
+            <div class="quick-stat-item"><span class="label">أكثر الأنظمة تأثراُ:</span><span class="value">@_stats?.TopAffectedSystem</span></div>
+            <div class="quick-stat-item"><span class="label">أفضل مختص أداءً:</span><span class="value">@_stats?.BestPerformer</span></div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private DashboardStats? _stats;
+    private List<TicketListDto>? _recentTickets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stats = await ApiClient.GetDashboardStatsAsync();
+        _recentTickets = (await ApiClient.GetTicketsAsync(new FilterRequest { StatusId = 1, PageSize = 10 })).Items;
+    }
+
+    private string GetStatusClass(string s) => s switch { "مفتوحة" => "open", "مسندة" => "assigned", "قيد المعالجة" => "progress", "محلولة - بانتظار الموافقة" => "resolved", "مغلقة" => "closed", "أُعيد فتحها" => "reopened", _ => "open" };
+}

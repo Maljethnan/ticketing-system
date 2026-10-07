@@ -1,0 +1,74 @@
+@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="app-layout">
+    <nav class="sidebar" @onclick="() => _collapsed = !_collapsed">
+        <div class="sidebar-header">
+            <img src="images/nazaha-logo.png" alt="شعار نزاها" class="sidebar-logo" />
+            <span class="sidebar-title" hidden="@_collapsed">نظام التذاكر</span>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/" class="nav-item @(Navigation.Uri.Contains("/") && !Navigation.Uri.Contains("/tickets") ? "active" : "")"><span>🏠</span><span>الرئيسية</span></a></li>
+            <li><a href="/tickets" class="nav-item @(Navigation.Uri.Contains("/tickets") ? "active" : "")"><span>📋</span><span>التذاكر</span></a></li>
+            <li><a href="/create-ticket" class="nav-item"><span>➕</span><span>إنشاء تذكرة</span></a></li>
+            <li><a href="/reports" class="nav-item @(Navigation.Uri.Contains("/reports") ? "active" : "")"><span>📊</span><span>التقارير</span></a></li>
+            <li class="nav-divider"></li>
+            <li><a href="/settings/users" class="nav-item" id="users-link"><span>👥</span><span>المستخدمين</span></a></li>
+            <li><a href="/settings/systems" class="nav-item" id="systems-link"><span>⚙️</span><span>الإعدادات</span></a></li>
+        </ul>
+    </nav>
+
+    <header class="topbar">
+        <div class="topbar-right">
+            <button class="menu-toggle" @onclick="() => _collapsed = !_collapsed">☰</button>
+            <h2 class="page-breadcrumb">@GetCurrentPageTitle()</h2>
+        </div>
+        <div class="topbar-left">
+            <div class="notification-bell" @onclick="() => _showNotifications = !_showNotifications">
+                🔔 @if (_unreadCount > 0) { <span class="badge">@_unreadCount</span> }
+            </div>
+            <div class="user-dropdown" @onclick="() => _showUserMenu = !_showUserMenu">
+                👤 @AuthService.CurrentUser?.UserName
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@if (_showNotifications)
+{
+    <div class="notifications-panel">
+        <h3>الإشعارات</h3>
+        @if (!_notifications.Any()) { <p class="empty-state">لا توجد إشعارات</p> }
+        else {
+            @foreach (var n in _notifications.Take(10))
+            { <div class="notification-item"><span>@n.Message</span><small>@n.Timestamp.ToString("HH:mm")</small></div> }
+        }
+    </div>
+}
+
+@code {
+    private bool _collapsed = false, _showNotifications = false, _showUserMenu = false;
+    private int _unreadCount = 0;
+    private List<NotificationItem> _notifications = new();
+
+    private string GetCurrentPageTitle()
+    {
+        var uri = Navigation.Uri;
+        if (uri.Contains("/tickets")) return "التذاكر";
+        if (uri.Contains("/reports")) return "التقارير";
+        if (uri.Contains("/create-ticket")) return "إنشاء تذكرة";
+        if (uri.Contains("/settings")) return "الإعدادات";
+        return "لوحة التحكم";
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}

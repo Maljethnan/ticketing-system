@@ -1,0 +1,101 @@
+@page "/tickets"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="tickets-page">
+    <div class="page-header">
+        <h1 class="page-title">التذاكر</h1>
+        <a href="/create-ticket" class="btn btn-primary">+ إنشاء تذكرة جديدة</a>
+    </div>
+
+    <div class="filters-bar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" @bind="_filter.Search" @oninput="DebounceSearch" placeholder="بحث في التذاكر..." />
+        </div>
+        <select @bind="_filter.SystemId">
+            <option value="">كل الأنظمة</option>
+            @foreach (var sys in _systems) { <option value="@sys.SystemId">@sys.SystemName</option> }
+        </select>
+        <select @bind="_filter.StatusId">
+            <option value="">كل الحالات</option>
+            <option value="1">مفتوحة</option><option value="2">مسندة</option>
+            <option value="3">قيد المعالجة</option><option value="4">محلولة</option>
+            <option value="5">مغلقة</option><option value="6">أُعيد فتحها</option>
+        </select>
+        <select @bind="_filter.PriorityId">
+            <option value="">كل الأولويات</option>
+            <option value="1">حرجة</option><option value="2">عالية</option>
+            <option value="3">متوسطة</option><option value="4">منخفضة</option>
+        </select>
+        <input type="date" @bind="_filter.FromDate" />
+        <input type="date" @bind="_filter.ToDate" />
+        <button class="btn btn-outline" @onclick="ResetFilters">إعادة تعيين</button>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead><tr><th>رقم التذكرة</th><th>العنوان</th><th>النظام</th><th>الحالة</th><th>الأولوية</th><th>المختص</th><th>التعليقات</th><th>التاريخ</th></tr></thead>
+            <tbody>
+                @if (_tickets == null || !_tickets.Any())
+                { <tr><td colspan="8" class="empty-state">لا توجد تذاكر مطابقة للفلاتر</td></tr> }
+                else
+                {
+                    @foreach (var ticket in _tickets)
+                    {
+                        <tr @onclick="() => Navigation.NavigateTo($"/tickets/{ticket.TicketId}")" class="clickable">
+                            <td class="ticket-number">@ticket.TicketNumber</td>
+                            <td>@ticket.Title</td>
+                            <td>@ticket.SystemName</td>
+                            <td><span class="status-badge status-@GetStatusClass(ticket.StatusName)">@ticket.StatusName</span></td>
+                            <td><span class="priority-badge" style="background-color:@ticket.PriorityColor;color:white">@ticket.PriorityName</span></td>
+                            <td>@ticket.AssignedToName</td>
+                            <td><span class="comment-count">💬 @ticket.CommentCount</span></td>
+                            <td>@ticket.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        <button class="btn btn-sm" disabled="@(_filter.Page <= 1)" @onclick="() => ChangePage(_filter.Page - 1)">← السابق</button>
+        <span class="page-info">صفحة @_filter.Page</span>
+        <button class="btn btn-sm" @onclick="() => ChangePage(_filter.Page + 1)">التالي →</button>
+    </div>
+</div>
+
+@code {
+    private FilterRequest _filter = new();
+    private List<TicketListDto>? _tickets;
+    private List<SystemDto> _systems = new();
+    private Timer? _debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _systems = await ApiClient.GetSystemsAsync();
+        await LoadTickets();
+    }
+
+    private async Task LoadTickets()
+    {
+        var result = await ApiClient.GetTicketsAsync(_filter);
+        _tickets = result.Items;
+    }
+
+    private void DebounceSearch(ChangeEventArgs e)
+    {
+        _filter.Search = e.Value?.ToString();
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () => { _filter.Page = 1; await LoadTickets(); });
+        }, null, 500, Timeout.Infinite);
+    }
+
+    private void ResetFilters() { _filter = new FilterRequest(); LoadTickets(); }
+    private void ChangePage(int page) { _filter.Page = page; LoadTickets(); }
+    private string GetStatusClass(string s) => s switch { "مفتوحة" => "open", "مسندة" => "assigned", "قيد المعالجة" => "progress", "محلولة - بانتظار الموافقة" => "resolved", "مغلقة" => "closed", "أُعيد فتحها" => "reopened", _ => "open" };
+}

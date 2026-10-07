@@ -1,0 +1,78 @@
+@page "/login"
+@layout LoginLayout
+@inject ApiClient ApiClient
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="images/nazaha-logo.png" alt="شعار نزاها" class="login-logo" />
+            <h1>نظام تتبع المشكلات التقنية</h1>
+            <p class="subtitle">هيئة الرقابة ومكافحة الفساد</p>
+        </div>
+
+        @if (_error != null) { <div class="alert alert-error">⚠️ @_error</div> }
+
+        @if (_requiresMfa)
+        {
+            <div class="mfa-section">
+                <h3>التحقق الثنائي</h3>
+                <input type="text" @bind="_tfaCode" maxlength="6" placeholder="رمز التحقق" class="mfa-input" />
+                <button class="btn btn-primary" @onclick="VerifyMfa">تحقق</button>
+            </div>
+        }
+        else
+        {
+            <form @onsubmit="HandleLogin">
+                <div class="form-group">
+                    <label>اسم المستخدم</label>
+                    <input type="text" @bind="_username" placeholder="أدخل اسم المستخدم" required />
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" @bind="_password" placeholder="أدخل كلمة المرور" required />
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" disabled="@_loading">
+                    @if (_loading) { <span class="spinner"></span> جاري التحقق... }
+                    else { <span>🔑 تسجيل الدخول</span> }
+                </button>
+            </form>
+        }
+
+        <div class="login-footer"><p>شبكة داخلية آمنة — لا تتصل بالإنترنت</p></div>
+    </div>
+</div>
+
+@code {
+    private string _username = "", _password = "", _tfaCode = "";
+    private string? _error = null;
+    private bool _loading = false, _requiresMfa = false;
+
+    private async Task HandleLogin()
+    {
+        _error = null; _loading = true;
+        try
+        {
+            var result = await ApiClient.LoginAsync(_username, _password);
+            if (result.RequiresMfa) _requiresMfa = true;
+            else { await AuthService.SetCurrentUserAsync(result.User); Navigation.NavigateTo("/"); }
+        }
+        catch (UnauthorizedAccessException) { _error = "بيانات الدخول غير صحيحة أو الحساب غير مفعل"; }
+        catch { _error = "حدث خطأ أثناء تسجيل الدخول"; }
+        finally { _loading = false; }
+    }
+
+    private async Task VerifyMfa()
+    {
+        _error = null; _loading = true;
+        try
+        {
+            var result = await ApiClient.LoginAsync(_username, _password, _tfaCode);
+            await AuthService.SetCurrentUserAsync(result.User);
+            Navigation.NavigateTo("/");
+        }
+        catch { _error = "رمز التحقق غير صحيح"; }
+        finally { _loading = false; }
+    }
+}

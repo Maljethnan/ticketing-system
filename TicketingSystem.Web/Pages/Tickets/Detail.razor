@@ -1,0 +1,150 @@
+@page "/tickets/{id:int}"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="ticket-detail-page">
+    @if (_ticket == null)
+    {
+        <div class="not-found"><h2>التذكرة غير موجودة أو ليس لديك صلاحية</h2><a href="/tickets" class="btn btn-outline">العودة</a></div>
+    }
+    else
+    {
+        <div class="ticket-header">
+            <div class="header-left">
+                <a href="/tickets" class="back-link">← رجوع</a>
+                <h1 class="ticket-title">#@_ticket.Base.TicketNumber — @_ticket.Base.Title</h1>
+            </div>
+            <div class="header-actions">
+                @if (_ticket.CanClose && !_IsClosed)
+                { <button class="btn btn-warning" @onclick="ShowCloseDialog">إغلاق التذكرة</button> }
+                @if (_ticket.CanApprove && _IsResolved)
+                { <button class="btn btn-success" @onclick="ApproveClosure">✅ موافقة على الإغلاق</button> }
+                @if (_IsResolved && !_ticket.CanApprove)
+                { <button class="btn btn-danger" @onclick="ShowReopenDialog">❌ رفض وإعادة فتح</button> }
+            </div>
+        </div>
+
+        <div class="ticket-info-card">
+            <div class="info-grid">
+                <div class="info-item"><span class="label">النظام:</span><span class="value">@_ticket.Base.SystemName</span></div>
+                <div class="info-item"><span class="label">الحالة:</span><span class="status-badge status-@GetStatusClass(_ticket.Base.StatusName)">@_ticket.Base.StatusName</span></div>
+                <div class="info-item"><span class="label">الأولوية:</span><span class="priority-badge" style="background-color:@_ticket.Base.PriorityColor;color:white">@_ticket.Base.PriorityName</span></div>
+                <div class="info-item"><span class="label">التاريخ:</span><span class="value">@_ticket.Base.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span></div>
+            </div>
+        </div>
+
+        <section class="section"><h2>وصف المشكلة</h2><div class="description-text">@_ticket.Description</div></section>
+
+        @if (_ticket.Attachments.Any())
+        {
+            <section class="section"><h2>المرفقات</h2>
+                <div class="attachments-list">
+                    @foreach (var att in _ticket.Attachments)
+                    { <a href="#" class="attachment-link">📎 @att.FileName (@FormatFileSize(att.FileSizeBytes))</a> }
+                </div>
+            </section>
+        }
+
+        <section class="section"><h2>سجل التغييرات</h2>
+            <div class="timeline">
+                @foreach (var change in _ticket.StatusHistory)
+                {
+                    <div class="timeline-item">
+                        <span class="timeline-time">🕐 @change.ChangedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="timeline-action">@change.ChangedByName — تغيير الحالة إلى @change.NewStatusName</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @if (!string.IsNullOrEmpty(_ticket.ResolutionSummary))
+        { <section class="section"><h2>ملخص الحل</h2><div class="resolution-box">@_ticket.ResolutionSummary</div></section> }
+
+        <section class="section">
+            <h2>التعليقات (@_ticket.Comments.Count)</h2>
+            @foreach (var comment in _ticket.Comments.Where(c => c.Replies == null || !c.Replies.Any()))
+            {
+                <CommentCard Comment="comment" TicketId="@_ticket.Base.TicketId" />
+                @if (comment.Replies != null && comment.Replies.Any())
+                {
+                    <div class="replies">
+                        @foreach (var reply in comment.Replies)
+                        { <CommentCard Comment="reply" TicketId="@_ticket.Base.TicketId" Indented="true" /> }
+                    </div>
+                }
+            }
+        </section>
+
+        <section class="section add-comment-section">
+            <h2>أضف تعليقاُ</h2>
+            <div class="comment-form">
+                <textarea @bind="_newComment" rows="4" placeholder="اكتب تعليقك هنا..."></textarea>
+                <div class="comment-actions">
+                    <div class="file-upload-small" @onclick="() => _commentFileInput.Focus()">📎 إرفاق ملف
+                        <input type="file" @ref="_commentFileInput" hidden @onchange="HandleCommentFileSelect" />
+                    </div>
+                    @if (_selectedCommentFile != null) { <span class="selected-file">✅ @_selectedCommentFile.Name</span> }
+                    <button class="btn btn-primary" @onclick="AddComment" disabled="@string.IsNullOrWhiteSpace(_newComment)">إرسال التعليق</button>
+                </div>
+            </div>
+        </section>
+    }
+</div>
+
+@if (_showCloseDialog)
+{
+    <div class="modal-overlay" @onclick="() => _showCloseDialog = false">
+        <div class="modal" @onclick:stopPropagation>
+            <h3>إغلاق التذكرة</h3>
+            <textarea @bind="_resolutionSummary" rows="4" placeholder="اشرح كيف تم حل المشكلة..."></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-outline" @onclick="() => _showCloseDialog = false">إلغاء</button>
+                <button class="btn btn-warning" @onclick="CloseTicket">إغلاق التذكرة</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showReopenDialog)
+{
+    <div class="modal-overlay" @onclick="() => _showReopenDialog = false">
+        <div class="modal" @onclick:stopPropagation>
+            <h3>رفض وإعادة فتح</h3>
+            <textarea @bind="_reopenReason" rows="3" placeholder="لماذا لم ينجح الحل؟"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-outline" @onclick="() => _showReopenDialog = false">إلغاء</button>
+                <button class="btn btn-danger" @onclick="ReopenTicket">إعادة فتح</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private TicketDetailDto? _ticket;
+    private string _newComment = "", _resolutionSummary = "", _reopenReason = "";
+    private bool _showCloseDialog, _showReopenDialog;
+    private IFormFile? _selectedCommentFile;
+    private ElementReference _commentFileInput;
+    private bool _IsClosed => _ticket?.Base.StatusName == "مغلقة";
+    private bool _IsResolved => _ticket?.Base.StatusName == "محلولة - بانتظار الموافقة";
+
+    protected override async Task OnInitializedAsync() => _ticket = await ApiClient.GetTicketAsync(Id);
+    private async Task AddComment()
+    {
+        if (string.IsNullOrWhiteSpace(_newComment)) return;
+        if (_selectedCommentFile != null) await ApiClient.UploadWithCommentAsync(Id, _newComment, _selectedCommentFile);
+        else await ApiClient.AddCommentAsync(Id, _newComment);
+        _newComment = ""; _selectedCommentFile = null;
+        _ticket = await ApiClient.GetTicketAsync(Id);
+    }
+    private void ShowCloseDialog() => _showCloseDialog = true;
+    private void ShowReopenDialog() => _showReopenDialog = true;
+    private async Task CloseTicket() { await ApiClient.CloseTicketAsync(Id, _resolutionSummary); _showCloseDialog = false; _ticket = await ApiClient.GetTicketAsync(Id); }
+    private async Task ApproveClosure() { await ApiClient.ApproveClosureAsync(Id); _ticket = await ApiClient.GetTicketAsync(Id); }
+    private async Task ReopenTicket() { await ApiClient.ReopenTicketAsync(Id, _reopenReason); _showReopenDialog = false; _ticket = await ApiClient.GetTicketAsync(Id); }
+    private void HandleCommentFileSelect(ChangeEventArgs e) { var input = (InputElement)e.Target; if (input.Files?.Count > 0) _selectedCommentFile = input.Files[0]; }
+    private string FormatFileSize(long bytes) => bytes < 1024 ? $"{bytes} B" : bytes < 1024*1024 ? $"{bytes/1024.0:F1} KB" : $"{bytes/(1024.0*1024):F1} MB";
+    private string GetStatusClass(string s) => s switch { "مفتوحة" => "open", "مسندة" => "assigned", "قيد المعالجة" => "progress", "محلولة - بانتظار الموافقة" => "resolved", "مغلقة" => "closed", "أُعيد فتحها" => "reopened", _ => "open" };
+}
