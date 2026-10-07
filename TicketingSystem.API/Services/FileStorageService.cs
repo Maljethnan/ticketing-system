@@ -1,46 +1,46 @@
-using Microsoft.Extensions.Options;
-using TicketingSystem.Core.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using TicketingSystem.Core.Services;
 
 namespace TicketingSystem.API.Services;
 
 public class FileStorageService : IFileStorageService
 {
-    private readonly FileStorageSettings _settings;
-    public FileStorageService(IOptions<FileStorageSettings> settings) => _settings = settings.Value;
+    private readonly string _rootPath;
 
-    public async Task<string> SaveFileAsync(string ticketNumber, IFormFile file)
+    public FileStorageService(string rootPath)
     {
-        var ticketFolder = Path.Combine(_settings.BasePath, ticketNumber);
-        Directory.CreateDirectory(ticketFolder);
-        var uniqueFileName = $"{Guid.NewGuid():N}_{file.FileName}";
-        var fullPath = Path.Combine(ticketFolder, uniqueFileName);
-        await using var stream = new FileStream(fullPath, FileMode.Create);
-        await file.CopyToAsync(stream);
-        return fullPath;
+        _rootPath = Path.GetFullPath(rootPath);
+        Directory.CreateDirectory(_rootPath);
     }
 
-    public async Task DeleteFileAsync(string filePath)
+    public async Task<string> SaveAsync(byte[] data, string fileName, string folder)
     {
-        if (File.Exists(filePath)) File.Delete(filePath);
+        var dirPath = Path.Combine(_rootPath, folder);
+        Directory.CreateDirectory(dirPath);
+        var filePath = Path.Combine(dirPath, Guid.NewGuid() + "_" + fileName);
+        await File.WriteAllBytesAsync(filePath, data);
+        return filePath;
     }
-}
 
-public class FileStorageSettings
-{
-    public string BasePath { get; set; } = @"C:\TicketingSystem\Attachments";
-    public int MaxFileSizeMB { get; set; } = 10;
-    public string[] AllowedExtensions { get; set; } = Array.Empty<string>();
-}
+    public byte[] ReadAsync(string filePath)
+    {
+        return File.ReadAllBytes(filePath);
+    }
 
-public class PasswordPolicy
-{
-    public int MinLength { get; set; } = 12;
-    public bool RequireUppercase { get; set; } = true;
-    public bool RequireLowercase { get; set; } = true;
-    public bool RequireDigit { get; set; } = true;
-    public bool RequireSpecialChar { get; set; } = true;
-    public int MaxAgeDays { get; set; } = 90;
-    public int HistoryCount { get; set; } = 5;
-    public int LockoutAfterAttempts { get; set; } = 5;
-    public int LockoutDurationMinutes { get; set; } = 30;
+    public void DeleteAsync(string filePath)
+    {
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+    }
+
+    public List<string> ListFilesAsync(string folder)
+    {
+        var dirPath = Path.Combine(_rootPath, folder);
+        if (!Directory.Exists(dirPath))
+            return new List<string>();
+        return Directory.GetFiles(dirPath).ToList();
+    }
 }

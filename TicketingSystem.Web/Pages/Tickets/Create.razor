@@ -1,69 +1,69 @@
-@page "/create-ticket"
-@attribute [Authorize]
+@page "/tickets/create"
 @inject ApiClient ApiClient
+@using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager Navigation
 
+<PageTitle>Create Ticket</PageTitle>
+
 <div class="create-ticket-page">
-    <h1 class="page-title">إنشاء تذكرة جديدة</h1>
+    <h1>Create New Ticket</h1>
 
-    @if (_success)
-    {
-        <div class="alert alert-success">✅ تم إنشاء التذكرة بنجاح! رقم التذكرة: @_createdTicketNumber <a href="/tickets/@_createdTicketId">عرض التفاصيل</a></div>
-    }
-    @if (_error != null) { <div class="alert alert-error">⚠️ @_error</div> }
-
-    <form @onsubmit="SubmitTicket" class="ticket-form">
-        <div class="form-group full-width">
-            <label>عنوان المشكلة *</label>
-            <input type="text" @bind="_title" placeholder="اكتب عنوانًا واضحًا للمشكلة" required />
-        </div>
-
-        <div class="form-group full-width">
-            <label>وصف المشكلة *</label>
-            <textarea @bind="_description" rows="6" placeholder="اشرح المشكلة بالتفصيل:" required></textarea>
+    <EditForm Model="_ticket" OnValidSubmit="@HandleSubmit">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Title</label>
+                <InputText @bind-Value="_ticket.Title" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>System</label>
+                <InputSelect @bind-Value="_ticket.SystemId" class="form-control">
+                    <option value="">-- Select --</option>
+                    @foreach (var sys in _systems)
+                    {
+                        <option value="@sys.Id">@sys.Name</option>
+                    }
+                </InputSelect>
+            </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>النظام المتأثر *</label>
-                <select @bind="_systemId" required>
-                    <option value="0">اختر النظام...</option>
-                    @foreach (var sys in _systems) { <option value="@sys.SystemId">@sys.SystemName</option> }
-                </select>
+                <label>Priority</label>
+                <InputSelect @bind-Value="_ticket.Priority" class="form-control">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </InputSelect>
             </div>
             <div class="form-group">
-                <label>نوع المشكلة *</label>
-                <select @bind="_issueTypeId" required>
-                    <option value="0">اختر النوع...</option>
-                    @foreach (var type in _issueTypes) { <option value="@type.IssueTypeId">@type.Description</option> }
-                </select>
+                <label>Category</label>
+                <InputSelect @bind-Value="_ticket.CategoryId" class="form-control">
+                    <option value="">-- Select --</option>
+                    @foreach (var cat in _categories)
+                    {
+                        <option value="@cat.Id">@cat.Name</option>
+                    }
+                </InputSelect>
             </div>
-        </div>
-
-        <div class="form-group">
-            <label>الأولوية *</label>
-            <select @bind="_priorityId" required>
-                <option value="0">اختر الأولوية...</option>
-                @foreach (var p in _priorities) { <option value="@p.PriorityId">@GetPriorityArabic(p.PriorityName)</option> }
-            </select>
         </div>
 
         <div class="form-group full-width">
-            <label>المرفقات</label>
-            <div class="file-upload-zone" @ondragover="@(e => e.PreventDefault())" @ondrop="HandleDrop" @onclick="() => _fileInput.Focus()">
-                <span class="upload-icon">📁</span>
-                <p>اسحب الملفات هنا أو اضغط للاختيار</p>
-                <small>الحد الأقصى: 10 MB | PDF, PNG, JPG, TXT, LOG, CSV, XLSX, DOCX</small>
-                <input type="file" @ref="_fileInput" multiple hidden @onchange="HandleFileSelect" />
-            </div>
-            @if (_files.Any())
+            <label>Description</label>
+            <textarea @bind="_ticket.Description" rows="6" class="form-control"></textarea>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Attachments</label>
+            <input type="file" multiple @onchange="OnFileSelected" class="file-input" />
+            @if (_files.Count > 0)
             {
-                <div class="uploaded-files">
+                <div class="file-list">
                     @foreach (var file in _files)
                     {
                         <div class="file-item">
-                            <span>✅ @file.Name (@FormatFileSize(file.Size))</span>
-                            <button type="button" class="remove-file" @onclick="() => RemoveFile(file)">✕</button>
+                            <span>@file.FileName (@FormatFileSize(file.Length))</span>
+                            <button type="button" class="remove-file" @onclick="@(() => RemoveFile(file))">X</button>
                         </div>
                     }
                 </div>
@@ -71,65 +71,66 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn btn-outline" @onclick="() => Navigation.NavigateTo("/tickets")">إلغاء</button>
+            <button type="button" class="btn btn-outline" @onclick="GoBack">Cancel</button>
             <button type="submit" class="btn btn-primary" disabled="@_loading">
-                @if (_loading) { <span class="spinner"></span> جاري الإرسال... }
-                else { <span>📤 إرسال التذكرة</span> }
+                @(_loading ? "Submitting..." : "Submit")
             </button>
         </div>
-    </form>
+    </EditForm>
 </div>
 
 @code {
-    private string _title = "", _description = "";
-    private int _systemId = 0, _issueTypeId = 0, _priorityId = 0;
+    private CreateTicketDto _ticket = new();
     private List<IFormFile> _files = new();
-    private ElementReference _fileInput;
-    private string? _error = null;
-    private bool _loading = false, _success = false;
-    private int _createdTicketId = 0;
-    private string _createdTicketNumber = "";
-
     private List<SystemDto> _systems = new();
-    private List<IssueTypeDto> _issueTypes = new();
-    private List<PriorityDto> _priorities = new();
+    private List<CategoryDto> _categories = new();
+    private bool _loading;
 
     protected override async Task OnInitializedAsync()
     {
         _systems = await ApiClient.GetSystemsAsync();
-        _issueTypes = await ApiClient.GetIssueTypesAsync();
-        _priorities = await ApiClient.GetPrioritiesAsync();
+        _categories = await ApiClient.GetCategoriesAsync();
     }
 
-    private async Task SubmitTicket()
+    private async Task HandleSubmit()
     {
-        _error = null; _loading = true;
         try
         {
-            var ticket = await ApiClient.CreateTicketAsync(new CreateTicketRequest(_title, _description, _systemId, _issueTypeId, _priorityId));
-            _createdTicketId = ticket.TicketId;
-            _createdTicketNumber = ticket.TicketNumber;
-            _success = true;
-            foreach (var file in _files) await ApiClient.UploadAttachmentAsync(ticket.TicketId, file);
+            _loading = true;
+            await ApiClient.CreateTicketAsync(_ticket);
+            Navigation.NavigateTo("/tickets");
         }
-        catch (Exception ex) { _error = "حدث خطأ أثناء إنشاء التذكرة: " + ex.Message; }
+        catch (Exception) { /* Show error */ }
         finally { _loading = false; }
     }
 
-    private void HandleDrop(DragEventArgs e)
+    private async Task OnFileSelected(ChangeEventArgs e)
     {
-        e.PreventDefault();
-        var files = e.DataTransfer?.Files;
-        if (files != null) for (int i = 0; i < files.Length; i++) _files.Add(files[i]);
-    }
-
-    private void HandleFileSelect(ChangeEventArgs e)
-    {
-        var input = (InputElement)e.Target;
-        if (input.Files != null) foreach (var file in input.Files) _files.Add(file);
+        var browserFiles = e.Value as IBrowserFile[];
+        if (browserFiles != null)
+        {
+            foreach (var bf in browserFiles)
+            {
+                using var stream = bf.OpenReadStream(long.MaxValue);
+                var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                ms.Position = 0;
+                _files.Add(new FormFile(ms, 0, ms.Length, bf.Name, bf.Name));
+            }
+        }
     }
 
     private void RemoveFile(IFormFile file) => _files.Remove(file);
-    private string FormatFileSize(long bytes) => bytes < 1024 ? $"{bytes} B" : bytes < 1024*1024 ? $"{bytes/1024.0:F1} KB" : $"{bytes/(1024.0*1024):F1} MB";
-    private string GetPriorityArabic(string n) => n switch { "Critical" => "حرجة", "High" => "عالية", "Medium" => "متوسطة", "Low" => "منخفضة", _ => n };
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("F1") + " KB";
+        return (bytes / (1024.0 * 1024)).ToString("F1") + " MB";
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/tickets");
+    }
 }

@@ -1,78 +1,87 @@
 @page "/login"
-@layout LoginLayout
+@inject Services.AuthService _authService
 @inject ApiClient ApiClient
-@inject AuthService AuthService
 @inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
 
 <div class="login-page">
     <div class="login-card">
-        <div class="login-header">
-            <img src="images/nazaha-logo.png" alt="شعار نزاها" class="login-logo" />
-            <h1>نظام تتبع المشكلات التقنية</h1>
-            <p class="subtitle">هيئة الرقابة ومكافحة الفساد</p>
-        </div>
+        <h1>Login</h1>
 
-        @if (_error != null) { <div class="alert alert-error">⚠️ @_error</div> }
-
-        @if (_requiresMfa)
+        @if (_error != null)
         {
-            <div class="mfa-section">
-                <h3>التحقق الثنائي</h3>
-                <input type="text" @bind="_tfaCode" maxlength="6" placeholder="رمز التحقق" class="mfa-input" />
-                <button class="btn btn-primary" @onclick="VerifyMfa">تحقق</button>
-            </div>
+            <div class="alert alert-danger">@_error</div>
         }
-        else
+
+        @if (!_requiresMfa)
         {
             <form @onsubmit="HandleLogin">
                 <div class="form-group">
-                    <label>اسم المستخدم</label>
-                    <input type="text" @bind="_username" placeholder="أدخل اسم المستخدم" required />
+                    <label>Username</label>
+                    <input type="text" @bind="_username" required />
                 </div>
                 <div class="form-group">
-                    <label>كلمة المرور</label>
-                    <input type="password" @bind="_password" placeholder="أدخل كلمة المرور" required />
+                    <label>Password</label>
+                    <input type="password" @bind="_password" required />
                 </div>
                 <button type="submit" class="btn btn-primary btn-full" disabled="@_loading">
-                    @if (_loading) { <span class="spinner"></span> جاري التحقق... }
-                    else { <span>🔑 تسجيل الدخول</span> }
+                    @(_loading ? "Loading..." : "Login")
                 </button>
             </form>
         }
-
-        <div class="login-footer"><p>شبكة داخلية آمنة — لا تتصل بالإنترنت</p></div>
+        else
+        {
+            <form @onsubmit="HandleMfa">
+                <div class="form-group">
+                    <label>MFA Code</label>
+                    <input type="text" @bind="_tfaCode" maxlength="6" required />
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Verify</button>
+            </form>
+        }
     </div>
 </div>
 
 @code {
-    private string _username = "", _password = "", _tfaCode = "";
-    private string? _error = null;
-    private bool _loading = false, _requiresMfa = false;
+    private string _username = "";
+    private string _password = "";
+    private string _tfaCode = "";
+    private bool _loading;
+    private bool _requiresMfa;
+    private string? _error;
 
     private async Task HandleLogin()
     {
-        _error = null; _loading = true;
         try
         {
+            _loading = true;
             var result = await ApiClient.LoginAsync(_username, _password);
-            if (result.RequiresMfa) _requiresMfa = true;
-            else { await AuthService.SetCurrentUserAsync(result.User); Navigation.NavigateTo("/"); }
+            if (result.RequiresMfa)
+            {
+                _requiresMfa = true;
+            }
+            else
+            {
+                await _authService.SetCurrentUserAsync(result.User);
+                Navigation.NavigateTo("/");
+            }
         }
-        catch (UnauthorizedAccessException) { _error = "بيانات الدخول غير صحيحة أو الحساب غير مفعل"; }
-        catch { _error = "حدث خطأ أثناء تسجيل الدخول"; }
+        catch (UnauthorizedAccessException)
+        {
+            _error = "Invalid credentials";
+        }
         finally { _loading = false; }
     }
 
-    private async Task VerifyMfa()
+    private async Task HandleMfa()
     {
-        _error = null; _loading = true;
         try
         {
             var result = await ApiClient.LoginAsync(_username, _password, _tfaCode);
-            await AuthService.SetCurrentUserAsync(result.User);
+            await _authService.SetCurrentUserAsync(result.User);
             Navigation.NavigateTo("/");
         }
-        catch { _error = "رمز التحقق غير صحيح"; }
-        finally { _loading = false; }
+        catch { _error = "Invalid verification code"; }
     }
 }

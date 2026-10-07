@@ -62,8 +62,8 @@ public class PermissionService : IPermissionService
         if (IsGeneralManager(user))
         {
             var generalDeptId = _context.SubDepartments.Where(sd => sd.SubDeptId == user.SubDeptId).Select(sd => sd.GeneralDeptId).FirstOrDefault();
-            if (generalDeptId.HasValue)
-                deptIds.UnionWith(_context.SubDepartments.Where(sd => sd.GeneralDeptId == generalDeptId.Value).Select(sd => sd.SubDeptId).ToList());
+            if (generalDeptId != default)
+                deptIds.UnionWith(_context.SubDepartments.Where(sd => sd.GeneralDeptId == generalDeptId).Select(sd => sd.SubDeptId).ToList());
         }
         return deptIds.ToList();
     }

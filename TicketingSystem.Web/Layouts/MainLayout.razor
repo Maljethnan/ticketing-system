@@ -29,7 +29,7 @@
                 🔔 @if (_unreadCount > 0) { <span class="badge">@_unreadCount</span> }
             </div>
             <div class="user-dropdown" @onclick="() => _showUserMenu = !_showUserMenu">
-                👤 @AuthService.CurrentUser?.UserName
+                👤 @_currentUserName
             </div>
         </div>
     </header>
@@ -52,9 +52,16 @@
 }
 
 @code {
+    private string _currentUserName = "";
     private bool _collapsed = false, _showNotifications = false, _showUserMenu = false;
     private int _unreadCount = 0;
     private List<NotificationItem> _notifications = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user != null) _currentUserName = user.UserName;
+    }
 
     private string GetCurrentPageTitle()
     {
@@ -66,9 +73,9 @@
         return "لوحة التحكم";
     }
 
-    private async Task Logout()
+    private void Logout()
     {
-        await AuthService.LogoutAsync();
+        AuthService.Logout();
         Navigation.NavigateTo("/login");
     }
 }

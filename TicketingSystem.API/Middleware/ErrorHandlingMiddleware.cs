@@ -21,21 +21,21 @@ public class ErrorHandlingMiddleware
             _logger.LogWarning(ex, "Unauthorized: {Message}", ex.Message);
             context.Response.StatusCode = 403;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{"error":"" + ex.Message + ""}");
+            await context.Response.WriteAsync("{\"error\":\"Access denied\"}");
         }
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
             context.Response.StatusCode = 404;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{"error":"" + ex.Message + ""}");
+            await context.Response.WriteAsync("{\"error\":\"Resource not found\"}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled: {Message}", ex.Message);
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{"error":"حدث خطأ غير متوقع"}");
+            await context.Response.WriteAsync("{\"error\":\"An unexpected error occurred\"}");
         }
     }
 }

@@ -1,0 +1,385 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "TicketingSystem.Web/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components.Web": "8.0.31",
+          "Microsoft.AspNetCore.SignalR.Client": "8.0.31",
+          "TicketingSystem.Core": "1.0.0"
+        },
+        "runtime": {
+          "TicketingSystem.Web.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.Authorization/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Metadata": "8.0.31",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "Microsoft.Extensions.Options": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Authorization.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Components/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authorization": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Components.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Components.Forms/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Components.Forms.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Components.Web/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components": "8.0.31",
+          "Microsoft.AspNetCore.Components.Forms": "8.0.31",
+          "Microsoft.Extensions.DependencyInjection": "8.0.1",
+          "Microsoft.JSInterop": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Components.Web.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Connections.Abstractions/8.0.31": {
+        "dependencies": {
+          "Microsoft.Extensions.Features": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Connections.Abstractions.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http.Connections.Client/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Connections.Common": "8.0.31",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "Microsoft.Extensions.Options": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Http.Connections.Client.dll": {
+            "assemblyVersion": "8.0.31.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http.Connections.Common/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Http.Connections.Common.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Metadata/8.0.31": {
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Metadata.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Client/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Connections.Client": "8.0.31",
+          "Microsoft.AspNetCore.SignalR.Client.Core": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.SignalR.Client.dll": {
+            "assemblyVersion": "8.0.31.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Client.Core/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.SignalR.Common": "8.0.31",
+          "Microsoft.AspNetCore.SignalR.Protocols.Json": "8.0.31",
+          "Microsoft.Extensions.DependencyInjection": "8.0.1",
+          "Microsoft.Extensions.Logging": "8.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.SignalR.Client.Core.dll": {
+            "assemblyVersion": "8.0.31.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Common/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "8.0.31",
+          "Microsoft.Extensions.Options": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.SignalR.Common.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Protocols.Json/8.0.31": {
+        "dependencies": {
+          "Microsoft.AspNetCore.SignalR.Common": "8.0.31"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection/8.0.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.DependencyInjection.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "Microsoft.Extensions.Features/8.0.31": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Features.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "Microsoft.Extensions.Logging/8.0.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "Microsoft.Extensions.Options": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Logging.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "Microsoft.Extensions.Logging.Abstractions/8.0.3": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1325.6609"
+          }
+        }
+      },
+      "Microsoft.Extensions.Options/8.0.2": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Options.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.224.6711"
+          }
+        }
+      },
+      "Microsoft.JSInterop/8.0.31": {
+        "runtime": {
+          "lib/net8.0/Microsoft.JSInterop.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.3126.42125"
+          }
+        }
+      },
+      "TicketingSystem.Core/1.0.0": {
+        "runtime": {
+          "TicketingSystem.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "TicketingSystem.Web/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Authorization/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-On74tYqRNmJIKaj9fz9Z31D+ERGu+Hdj9kbaLIDgENlhAKjKPTooczXgS7h7LnE5L9MMK2FcJeJjZvyQT4t7Sg==",
+      "path": "microsoft.aspnetcore.authorization/8.0.31",
+      "hashPath": "microsoft.aspnetcore.authorization.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ybNJJrOCQm7RFsGYVaBFP/6q+PFlasaRMVblvnxUvvmNZ/IYPwpX2wVX21+1QyU8gmho9XC/4coJJBJJN89gQA==",
+      "path": "microsoft.aspnetcore.components/8.0.31",
+      "hashPath": "microsoft.aspnetcore.components.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Forms/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Cfc54VmIA1L4g/3+Synhm/KVVsUtJtgPJPM0smP5kzi3Pc1xxkyFmIw1n3XqH/rbocPvwB6F1eB8tQBVs9HPSg==",
+      "path": "microsoft.aspnetcore.components.forms/8.0.31",
+      "hashPath": "microsoft.aspnetcore.components.forms.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Web/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5khHtJfddxMU+VAufbuMldVRTdm0DW7O9bPdqXMpI7FNixeV5+d85dL5quWQkpa3ax4qGy+Bamz3y+LBwAeblw==",
+      "path": "microsoft.aspnetcore.components.web/8.0.31",
+      "hashPath": "microsoft.aspnetcore.components.web.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Connections.Abstractions/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VuMV15109kwqQ7gpITocFPxqn6WUit1tAz0TuW6Ocvz2cnUybrwa0crueuD9ktS15EgQJ+4e+8odzJwSY/TYhg==",
+      "path": "microsoft.aspnetcore.connections.abstractions/8.0.31",
+      "hashPath": "microsoft.aspnetcore.connections.abstractions.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Http.Connections.Client/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3/w3W/WoGxMheFwXCfcWN3HU175Z7o3MqiwXykzmBhZjGXFIAWG6dYX5f1ApVA6VjxZ0Kdj2+9lqBUahKHIrnw==",
+      "path": "microsoft.aspnetcore.http.connections.client/8.0.31",
+      "hashPath": "microsoft.aspnetcore.http.connections.client.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Http.Connections.Common/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qeFubLv3RQHBBFy7PkRbQTPoOmy/JKvAOvkh9rKnqBTOD8urAfxs/ukM0Uglf6Qt8qNllcDistiHm2V6Om+kyg==",
+      "path": "microsoft.aspnetcore.http.connections.common/8.0.31",
+      "hashPath": "microsoft.aspnetcore.http.connections.common.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Metadata/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-w0OPyze1+PeL4888INJA1CU1jEWIdIfwESBY1sfQLMMb7Gl2T8aoBlSqliUtLL/jzkCaKqP8F/jQbcUBotqAEw==",
+      "path": "microsoft.aspnetcore.metadata/8.0.31",
+      "hashPath": "microsoft.aspnetcore.metadata.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Client/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Bwv7FWehXZIKO/xvpGtLLMaLc6NGeWyUe0v1l/vlFNfw+aK5Bf09hESqkPibDqfMJVG9EUtK8T0mn/yyke6GJw==",
+      "path": "microsoft.aspnetcore.signalr.client/8.0.31",
+      "hashPath": "microsoft.aspnetcore.signalr.client.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Client.Core/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-t5BvlREgWyT135Qcka5Lxhif4A7YrfKGMPC8GgLBYg3BE4ArJrllsy+5T/t49z2owwAcJK/PoCEE7b0g8G5MYA==",
+      "path": "microsoft.aspnetcore.signalr.client.core/8.0.31",
+      "hashPath": "microsoft.aspnetcore.signalr.client.core.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Common/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-7wD2MNFRh0eZ6VqtdGdzJdxsdx+HprIuBMLnpZP5CO0MSy8WKkEEu4fGoawgWb7IVTdkQiIy5jK8sU5RgmGdmw==",
+      "path": "microsoft.aspnetcore.signalr.common/8.0.31",
+      "hashPath": "microsoft.aspnetcore.signalr.common.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Protocols.Json/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-tF3S5qlOWdmDR/zK5+iXAeNW1aMSh3X+87eUmJ0PDXyx7WytoA2wFGKsM3PQqd0xyVQl7Que7PxSQXJCY4BS4A==",
+      "path": "microsoft.aspnetcore.signalr.protocols.json/8.0.31",
+      "hashPath": "microsoft.aspnetcore.signalr.protocols.json.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection/8.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-BmANAnR5Xd4Oqw7yQ75xOAYODybZQRzdeNucg7kS5wWKd2PNnMdYtJ2Vciy0QLylRmv42DGl5+AFL9izA6F1Rw==",
+      "path": "microsoft.extensions.dependencyinjection/8.0.1",
+      "hashPath": "microsoft.extensions.dependencyinjection.8.0.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg==",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/8.0.2",
+      "hashPath": "microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Features/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-H4iY8wRKy2PMwW2f90UHsNcKYAq2zUg0Onf5TfJ4Bz579SlQtgqZPuLs109HO7bNBBZZ77VP5gTPxTVcIHsLRw==",
+      "path": "microsoft.extensions.features/8.0.31",
+      "hashPath": "microsoft.extensions.features.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging/8.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-4x+pzsQEbqxhNf1QYRr5TDkLP9UsLT3A6MdRKDDEgrW7h1ljiEPgTNhKYUhNCCAaVpQECVQ+onA91PTPnIp6Lw==",
+      "path": "microsoft.extensions.logging/8.0.1",
+      "hashPath": "microsoft.extensions.logging.8.0.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging.Abstractions/8.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dL0QGToTxggRLMYY4ZYX5AMwBb+byQBd/5dMiZE07Nv73o6I5Are3C7eQTh7K2+A4ct0PVISSr7TZANbiNb2yQ==",
+      "path": "microsoft.extensions.logging.abstractions/8.0.3",
+      "hashPath": "microsoft.extensions.logging.abstractions.8.0.3.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Options/8.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dWGKvhFybsaZpGmzkGCbNNwBD1rVlWzrZKANLW/CcbFJpCEceMCGzT7zZwHOGBCbwM0SzBuceMj5HN1LKV1QqA==",
+      "path": "microsoft.extensions.options/8.0.2",
+      "hashPath": "microsoft.extensions.options.8.0.2.nupkg.sha512"
+    },
+    "Microsoft.JSInterop/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-eQVWMLVOsPie4/hFvG+aJti/buk1D4c8Bc8toE2gBNWJnaa7bVNQ60PDKObfbgXXWk9Psk+7tYAQ/ynqTyp7zw==",
+      "path": "microsoft.jsinterop/8.0.31",
+      "hashPath": "microsoft.jsinterop.8.0.31.nupkg.sha512"
+    },
+    "TicketingSystem.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

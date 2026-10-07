@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using TicketingSystem.Core.Interfaces;
 using TicketingSystem.Data.Context;

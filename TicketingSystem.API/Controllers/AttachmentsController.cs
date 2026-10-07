@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Core.Entities;
+using TicketingSystem.Core.Services;
 using TicketingSystem.Core.Interfaces;
 using TicketingSystem.Data.Context;
 
@@ -28,6 +29,13 @@ public class AttachmentsController : ControllerBase
 
     private int GetCurrentUserId() => int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+    private byte[] ReadFileBytes(IFormFile file)
+    {
+        using var ms = new MemoryStream();
+        file.CopyTo(ms);
+        return ms.ToArray();
+    }
+
     [HttpPost]
     public async Task<IActionResult> Upload(int ticketId, IFormFile file)
     {
@@ -37,12 +45,14 @@ public class AttachmentsController : ControllerBase
         var user = await _context.Users.FindAsync(GetCurrentUserId());
         if (user == null || !_permissionService.CanViewTicket(user, ticket)) return Forbid();
 
-        var maxBytes = long.Parse(_config["FileStorage:MaxFileSizeMB"]) * 1024 * 1024;
+        var sizeStr = _config["FileStorage:MaxFileSizeMB"];
+        if (string.IsNullOrEmpty(sizeStr)) return BadRequest(new { message = "إعداد حجم الملف غير محدد" });
+        var maxBytes = long.Parse(sizeStr) * 1024 * 1024;
         if (file.Length > maxBytes)
             return BadRequest(new { message = "حجم الملف يتجاوز الحد الأقصى (10 MB)" });
 
-        var allowedExtensions = _config.GetSection("FileStorage:AllowedExtensions").Get<string[]>();
-        var extension = Path.GetExtension(file.FileName).ToLower();
+        var allowedExtensions = _config.GetSection("FileStorage:AllowedExtensions").Get<string[]>() ?? Array.Empty<string>();
+        var extension = Path.GetExtension(file.FileName)?.ToLower() ?? "";
         if (!allowedExtensions.Contains(extension))
             return BadRequest(new { message = "نوع الملف غير مسموح به" });
 
@@ -50,7 +60,7 @@ public class AttachmentsController : ControllerBase
         if (blockedExtensions.Contains(extension))
             return BadRequest(new { message = "هذا النوع من الملفات محظور لأسباب أمنية" });
 
-        var filePath = await _fileStorage.SaveFileAsync(ticket.TicketNumber, file);
+        var filePath = await _fileStorage.SaveAsync(ReadFileBytes(file), file.FileName, "attachments");
 
         var attachment = new TicketAttachment
         {
@@ -77,7 +87,7 @@ public class AttachmentsController : ControllerBase
         var user = await _context.Users.FindAsync(GetCurrentUserId());
         if (user == null || !_permissionService.CanCommentOnTicket(user, ticket)) return Forbid();
 
-        var filePath = await _fileStorage.SaveFileAsync(ticket.TicketNumber, file);
+        var filePath = await _fileStorage.SaveAsync(ReadFileBytes(file), file.FileName, "attachments");
 
         var comment = new TicketComment
         {
@@ -141,7 +151,7 @@ public class AttachmentsController : ControllerBase
 
         attachment.DeletedAt = DateTime.UtcNow;
         attachment.DeletedById = GetCurrentUserId();
-        await _fileStorage.DeleteFileAsync(attachment.FilePath);
+        _fileStorage.DeleteAsync(attachment.FilePath);
         await _context.SaveChangesAsync();
         return NoContent();
     }

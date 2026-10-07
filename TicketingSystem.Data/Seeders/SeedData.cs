@@ -51,13 +51,12 @@ public static class SeedData
         modelBuilder.Entity<User>().HasData(
             new User
             {
-                UserId = 1,
-                UserName = "admin",
+                Id = 1,
+                Username = "admin",
                 Email = "admin@nazaha.gov.sa",
                 PasswordHash = adminHash,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
-                IsLocked = false
             }
         );
 

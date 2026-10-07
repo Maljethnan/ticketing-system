@@ -1,16 +1,56 @@
+using System;
+using System.Collections.Generic;
+
 namespace TicketingSystem.Core.DTOs;
 
-public record CreateTicketRequest(string Title, string Description, int SystemId, int IssueTypeId, int PriorityId);
-public record FilterRequest(string? Search, int? SystemId, int? StatusId, int? PriorityId, DateTime? FromDate, DateTime? ToDate, int Page = 1, int PageSize = 20);
-public record TicketDto(int TicketId, string TicketNumber, string Title, string StatusName, string PriorityName, string SystemName, DateTime CreatedAt);
-public record TicketListDto(int TicketId, string TicketNumber, string Title, string StatusName, string PriorityName, string PriorityColor, string SystemName, string AssignedToName, DateTime CreatedAt, int CommentCount);
-public record TicketDetailDto(TicketDto Base, string Description, List<CommentDto> Comments, List<AttachmentDto> Attachments, List<StatusChangeDto> StatusHistory, string? ResolutionSummary, bool CanClose, bool CanApprove);
-public record CommentDto(int CommentId, string Content, string SenderName, string SenderRole, DateTime SentAt, bool IsEdited, bool CanEdit, bool CanDelete, List<AttachmentDto> Attachments, List<CommentDto> Replies);
-public record AttachmentDto(int AttachmentId, string FileName, long FileSizeBytes, string MimeType, DateTime UploadedAt);
-public record StatusChangeDto(int OldStatusName, int NewStatusName, string ChangedByName, DateTime ChangedAt, string? Comment);
-public record StatusUpdateRequest(int NewStatusId, string? Comment);
-public record CloseRequest(string ResolutionSummary);
-public record ReopenRequest(string Reason);
-public record GrantAccessRequest(int GranteeUserId, string? Reason);
-public record AddCommentRequest(string Content, int? ParentCommentId, bool? IsInternal);
-public record EditCommentRequest(string Content);
+public class TicketDto
+{
+    public int TicketId { get; set; }
+    public string TicketNumber { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public int StatusId { get; set; }
+    public string StatusName { get; set; } = "";
+    public int PriorityId { get; set; }
+    public string PriorityName { get; set; } = "";
+    public int SystemId { get; set; }
+    public string SystemName { get; set; } = "";
+    public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public int CreatedBy { get; set; }
+    public string ReporterName { get; set; } = "";
+    public int? AssignedTo { get; set; }
+    public string AssigneeName { get; set; } = "";
+    public List<AttachmentDto>? Attachments { get; set; }
+}
+
+public class AttachmentDto
+{
+    public int Id { get; set; }
+    public string FileName { get; set; } = "";
+    public long FileSizeBytes { get; set; }
+    public DateTime UploadedAt { get; set; }
+}
+
+public class CommentDto
+{
+    public int Id { get; set; }
+    public string Text { get; set; } = "";
+    public int AuthorId { get; set; }
+    public string AuthorName { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+}
+
+public class FilterRequest
+{
+    public string? Search { get; set; }
+    public int? SystemId { get; set; }
+    public int? StatusId { get; set; }
+    public int? PriorityId { get; set; }
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
+}

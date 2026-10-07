@@ -1,102 +1,104 @@
 @page "/reports"
-@attribute [Authorize]
 @inject ApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Reports</PageTitle>
 
 <div class="reports-page">
-    <h1 class="page-title">التقارير والإحصائيات</h1>
+    <h1>Reports & Statistics</h1>
 
     <div class="filter-bar">
-        <label>من:</label><input type="date" @bind="_fromDate" />
-        <label>إلى:</label><input type="date" @bind="_toDate" />
-        <button class="btn btn-primary" @onclick="LoadAllReports">تطبيق</button>
-        <a href="#" class="btn btn-outline" onclick="exportToCsv()">📥 تصدير CSV</a>
+        <input type="date" @bind="_fromDate" placeholder="From" />
+        <input type="date" @bind="_toDate" placeholder="To" />
+        <button class="btn btn-primary" @onclick="LoadAllReports">Apply</button>
     </div>
 
-    <div class="report-tabs">
-        <button class="tab-btn active" @onclick="() => _activeTab = 0">توزيع الحالات</button>
-        <button class="tab-btn" @onclick="() => _activeTab = 1">توزيع الأولويات</button>
-        <button class="tab-btn" @onclick="() => _activeTab = 2">حسب النظام</button>
-        <button class="tab-btn" @onclick="() => _activeTab = 3">حسب الإدارة</button>
-        <button class="tab-btn" @onclick="() => _activeTab = 4">أداء الدعم</button>
-        <button class="tab-btn" @onclick="() => _activeTab = 5">نوع المشكلة</button>
+    <div class="tabs">
+        <button class="@(_activeTab == 0 ? "active" : "")" @onclick="() => _activeTab = 0">Status Distribution</button>
+        <button class="@(_activeTab == 1 ? "active" : "")" @onclick="() => _activeTab = 1">Priority Distribution</button>
+        <button class="@(_activeTab == 2 ? "active" : "")" @onclick="() => _activeTab = 2">Avg Processing Time</button>
+        <button class="@(_activeTab == 3 ? "active" : "")" @onclick="() => _activeTab = 3">Most Active Systems</button>
+        <button class="@(_activeTab == 4 ? "active" : "")" @onclick="() => _activeTab = 4">Full Report</button>
     </div>
 
     @if (_activeTab == 0)
     {
         <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>الحالة</th><th>العدد</th></tr></thead>
-                <tbody>@foreach (var s in _statusDist ?? new()) { <tr><td>@s.StatusName</td><td>@s.Count</td></tr> }</tbody>
+            <table>
+                <thead><tr><th>Status</th><th>Count</th></tr></thead>
+                <tbody>
+                    @foreach (var item in (_statusDist ?? new List<StatusDistributionDto>()))
+                    {
+                        <tr><td>@item.StatusName</td><td>@item.Count</td></tr>
+                    }
+                </tbody>
             </table>
         </div>
     }
-    @else if (_activeTab == 1)
+
+    @if (_activeTab == 1)
     {
         <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>الأولوية</th><th>العدد</th></tr></thead>
-                <tbody>@foreach (var p in _priorityDist ?? new()) { <tr><td><span class="priority-badge" style="background-color:@p.ColorCode;color:white">@p.PriorityName</span></td><td>@p.Count</td></tr> }</tbody>
+            <table>
+                <thead><tr><th>Priority</th><th>Count</th></tr></thead>
+                <tbody>
+                    @foreach (var item in (_priorityDist ?? new List<PriorityDistributionDto>()))
+                    {
+                        <tr><td>@item.PriorityName</td><td>@item.Count</td></tr>
+                    }
+                </tbody>
             </table>
         </div>
     }
-    @else if (_activeTab == 2)
+
+    @if (_activeTab == 2)
+    {
+        <div class="table-container"><p>Average processing time: @_avgProcessingTime hours</p></div>
+    }
+
+    @if (_activeTab == 3)
     {
         <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>النظام</th><th>الإجمالي</th><th>مفتوحة</th><th>مغلقة</th><th>متوسط الحل (ساعة)</th></tr></thead>
-                <tbody>@foreach (var r in _systemReport ?? new()) { <tr><td>@r.SystemName</td><td>@r.TotalCount</td><td>@r.OpenCount</td><td>@r.ClosedCount</td><td>@r.AvgResolutionHours.ToString("F1")</td></tr> }</tbody>
+            <table>
+                <thead><tr><th>System</th><th>Ticket Count</th></tr></thead>
+                <tbody>
+                    @foreach (var item in (_systemStats ?? new List<SystemStatsDto>()))
+                    {
+                        <tr><td>@item.SystemName</td><td>@item.TicketCount</td></tr>
+                    }
+                </tbody>
             </table>
         </div>
     }
-    @else if (_activeTab == 3)
+
+    @if (_activeTab == 4)
     {
         <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>الإدارة</th><th>الإجمالي</th><th>مفتوحة</th><th>مغلقة</th><th>متوسط الحل (ساعة)</th></tr></thead>
-                <tbody>@foreach (var r in _deptReport ?? new()) { <tr><td>@r.DeptName</td><td>@r.TotalCount</td><td>@r.OpenCount</td><td>@r.ClosedCount</td><td>@r.AvgResolutionHours.ToString("F1")</td></tr> }</tbody>
-            </table>
-        </div>
-    }
-    @else if (_activeTab == 4)
-    {
-        <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>المختص</th><th>مسندة</th><th>مغلقة</th><th>مفتوحة</th><th>متوسط الحل (ساعة)</th><th>تجاوز SLA</th></tr></thead>
-                <tbody>@foreach (var p in _supportPerf ?? new()) { <tr><td>@p.SpecialistName</td><td>@p.TotalAssigned</td><td>@p.ClosedCount</td><td>@p.OpenCount</td><td>@p.AvgResolutionHours.ToString("F1")</td><td>@p.SLABreachedCount</td></tr> }</tbody>
-            </table>
-        </div>
-    }
-    @else if (_activeTab == 5)
-    {
-        <div class="table-container">
-            <table class="data-table">
-                <thead><tr><th>نوع المشكلة</th><th>الوصف</th><th>العدد</th></tr></thead>
-                <tbody>@foreach (var t in _issueTypeReport ?? new()) { <tr><td>@t.TypeName</td><td>@t.Description</td><td>@t.Count</td></tr> }</tbody>
-            </table>
+            <button class="btn btn-primary" @onclick="ExportFullReport">Export PDF</button>
         </div>
     }
 </div>
 
 @code {
     private int _activeTab = 0;
-    private DateTime? _fromDate, _toDate;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
     private List<StatusDistributionDto>? _statusDist;
     private List<PriorityDistributionDto>? _priorityDist;
-    private List<SystemReportDto>? _systemReport;
-    private List<DepartmentReportDto>? _deptReport;
-    private List<SupportPerformanceDto>? _supportPerf;
-    private List<IssueTypeReportDto>? _issueTypeReport;
+    private List<SystemStatsDto> _systemStats = new();
+    private double _avgProcessingTime = 0;
 
-    protected override async Task OnInitializedAsync() => await LoadAllReports();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllReports();
+    }
 
     private async Task LoadAllReports()
     {
-        var q = $"?from={_fromDate?.ToString("yyyy-MM-dd")}&&to={_toDate?.ToString("yyyy-MM-dd")}";
-        _statusDist = await ApiClient.GetStatusDistributionAsync(q);
-        _priorityDist = await ApiClient.GetPriorityDistributionAsync(q);
-        _systemReport = await ApiClient.GetBySystemAsync(q);
-        _deptReport = await ApiClient.GetByDepartmentAsync(q);
-        _supportPerf = await ApiClient.GetSupportPerformanceAsync(q);
-        _issueTypeReport = await ApiClient.GetIssueTypesReportAsync(q);
-    }
+        var query = "?from=" + _fromDate?.ToString("yyyy-MM-dd") + "&to=" + _toDate?.ToString("yyyy-MM-dd");
+        _statusDist = await ApiClient.GetStatusDistributionAsync(query);
+        _priorityDist = await ApiClient.GetPriorityDistributionAsync(query);
+            }
+
+    private void ExportFullReport() { /* TODO */ }
 }

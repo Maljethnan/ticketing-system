@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # قاعدة البيانات — SQL Server 2022
+  # ========================================
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ticketing-db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD:-YourStrong@Passw0rd}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+      - ./sql-init:/docker-entrypoint-initdb.d
+    networks:
+      - ticketing-net
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-YourStrong@Passw0rd}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ========================================
+  # Backend — REST API
+  # ========================================
+  api:
+    build:
+      context: .
+      dockerfile: TicketingSystem.API/Dockerfile
+    container_name: ticketing-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Database=TicketingDB;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;"
+      FileStorage__Path: "/app/uploads"
+      FileStorage__BaseUrl: "http://localhost:8080/files"
+      JwtSettings__SecretKey: "${JWT_SECRET:-SuperSecretKeyForLocalDevEnvironment!123}"
+      JwtSettings__ExpiryMinutes: "60"
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - ticketing-net
+
+  # ========================================
+  # Frontend — Blazor Server
+  # ========================================
+  web:
+    build:
+      context: .
+      dockerfile: TicketingSystem.Web/Dockerfile
+    container_name: ticketing-web
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    depends_on:
+      - api
+    environment:
+      ApiBaseUrl: "http://api:8080"
+      ConnectionStrings__DefaultConnection: "Server=db;Database=TicketingDB;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;"
+    networks:
+      - ticketing-net
+
+volumes:
+  sql-data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  ticketing-net:
+    driver: bridge

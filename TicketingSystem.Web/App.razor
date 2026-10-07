@@ -1,20 +1,14 @@
-@using Microsoft.AspNetCore.Components.Routing
-@using TicketingSystem.Web.Layouts
-
-<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <RoleCheck Roles="Employee,SupportSpecialist,SystemManager,DepartmentManager,GeneralManager">
-                <p role="alert">الصفحة غير موجودة.</p>
-                <a href="/" class="btn btn-primary">العودة للرئيسية</a>
-            </RoleCheck>
-            <p role="alert" class="not-authenticated">يرجى تسجيل الدخول أولاً.</p>
-            <a href="/login" class="btn btn-primary">تسجيل الدخول</a>
-        </LayoutView>
-    </NotFound>
-</Router>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="css/app.css" />
+    <HeadOutlet />
+</head>
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+</body>
+</html>

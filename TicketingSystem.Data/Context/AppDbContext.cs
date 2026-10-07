@@ -1,3 +1,4 @@
+using TicketingSystem.Data.Seeders;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Core.Entities;
 
@@ -12,7 +13,6 @@ public class AppDbContext : DbContext
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<GeneralDepartment> GeneralDepartments => Set<GeneralDepartment>();
-    public DbSet<SubDepartment> SubDepartments => Set<SubDepartment>();
     public DbSet<UserDepartmentAccess> UserDepartmentAccesses => Set<UserDepartmentAccess>();
     public DbSet<SystemEntity> Systems => Set<SystemEntity>();
     public DbSet<SystemSpecialist> SystemSpecialists => Set<SystemSpecialist>();
@@ -35,9 +35,9 @@ public class AppDbContext : DbContext
 
         // Relationships
         modelBuilder.Entity<User>()
-            .HasOne(u => u.SubDepartment)
+            .HasOne(u => u.GeneralDepartment)
             .WithMany(d => d.Users)
-            .HasForeignKey(u => u.SubDeptId)
+            .HasForeignKey(u => u.GeneralDeptId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<UserRole>()
@@ -49,11 +49,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(ur => ur.AssignedBy)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<SubDepartment>()
-            .HasOne(sd => sd.GeneralDepartment)
-            .WithMany(gd => gd.SubDepartments)
-            .HasForeignKey(sd => sd.GeneralDeptId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SystemSpecialist>()
             .HasKey(ss => new { ss.SystemId, ss.UserId });
@@ -108,7 +103,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Ticket>().HasIndex(t => t.TicketNumber).IsUnique();
         modelBuilder.Entity<Ticket>().HasIndex(t => t.StatusId);
         modelBuilder.Entity<Ticket>().HasIndex(t => t.CreatedAt);
-        modelBuilder.Entity<User>().HasIndex(u => u.UserName).IsUnique();
+        modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
         // Seed Data

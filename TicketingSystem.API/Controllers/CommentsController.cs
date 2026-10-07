@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Core.Entities;
+using TicketingSystem.Core.DTOs;
 using TicketingSystem.Core.Interfaces;
 using TicketingSystem.Data.Context;
 
@@ -60,10 +61,10 @@ public class CommentsController : ControllerBase
         {
             TicketId = ticketId,
             SenderId = GetCurrentUserId(),
-            Content = System.Net.WebUtility.HtmlEncode(request.Content),
+            Content = System.Net.WebUtility.HtmlEncode(request.Content ?? ""),
             ParentCommentId = request.ParentCommentId,
             SentAt = DateTime.UtcNow,
-            IsInternal = request.IsInternal ?? false
+            IsInternal = request.IsInternal
         };
 
         _context.TicketComments.Add(comment);
@@ -87,7 +88,7 @@ public class CommentsController : ControllerBase
         if (comment == null) return NotFound();
         if (comment.SenderId != GetCurrentUserId()) return Forbid();
 
-        comment.Content = System.Net.WebUtility.HtmlEncode(request.Content);
+        comment.Content = System.Net.WebUtility.HtmlEncode(request.Content ?? "");
         comment.IsEdited = true;
         comment.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();

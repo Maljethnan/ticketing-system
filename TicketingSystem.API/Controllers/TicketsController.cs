@@ -22,11 +22,11 @@ public class TicketsController : ControllerBase
     private int GetCurrentUserId() => int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateTicketRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateTicketDto request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var ticket = await _ticketService.CreateTicketAsync(request, GetCurrentUserId());
-        return CreatedAtAction(nameof(Get), new { id = ticket.TicketId }, ticket);
+        return CreatedAtAction(nameof(Get), new { id = ticket }, ticket);
     }
 
     [HttpGet("{id}")]
@@ -47,20 +47,20 @@ public class TicketsController : ControllerBase
     [HttpGet("my")]
     public async Task<IActionResult> MyTickets()
     {
-        return Ok(await _ticketService.GetMyTicketsAsync(GetCurrentUserId()));
+        return Ok(await _ticketService.GetMyTicketsAsync(GetCurrentUserId(), new FilterRequest()));
     }
 
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateRequest request)
     {
-        await _ticketService.UpdateTicketStatusAsync(id, request.NewStatusId, GetCurrentUserId(), request.Comment);
+        await _ticketService.UpdateTicketStatusAsync(id, request, GetCurrentUserId());
         return Ok(new { message = "تم تحديث حالة التذكرة" });
     }
 
     [HttpPost("{id}/close")]
     public async Task<IActionResult> Close(int id, [FromBody] CloseRequest request)
     {
-        await _ticketService.CloseTicketAsync(id, GetCurrentUserId(), request.ResolutionSummary);
+        await _ticketService.CloseTicketAsync(id, request, GetCurrentUserId());
         return Ok(new { message = "تم رفع طلب إغلاق التذكرة بانتظار موافقة المنشئ" });
     }
 
@@ -74,14 +74,14 @@ public class TicketsController : ControllerBase
     [HttpPost("{id}/reopen")]
     public async Task<IActionResult> Reopen(int id, [FromBody] ReopenRequest request)
     {
-        await _ticketService.ReopenTicketAsync(id, GetCurrentUserId(), request.Reason);
+        await _ticketService.ReopenTicketAsync(id, request, GetCurrentUserId());
         return Ok(new { message = "تمت إعادة فتح التذكرة" });
     }
 
     [HttpPost("{id}/grant-access")]
     public async Task<IActionResult> GrantAccess(int id, [FromBody] GrantAccessRequest request)
     {
-        await _ticketService.GrantAccessAsync(id, request.GranteeUserId, GetCurrentUserId(), request.Reason);
+        await _ticketService.GrantAccessAsync(id, request, GetCurrentUserId());
         return Ok(new { message = "تم منح صلاحية المشاهدة" });
     }
 }

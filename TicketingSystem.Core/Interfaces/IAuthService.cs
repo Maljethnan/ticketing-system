@@ -4,12 +4,7 @@ namespace TicketingSystem.Core.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResult> LoginAsync(LoginRequest request);
-    Task<bool> LogoutAsync(int userId);
-    Task<List<UserDto>> GetAllUsersAsync();
-    Task<UserDto?> GetUserByIdAsync(int userId);
-    Task<UserDto> CreateUserAsync(CreateUserRequest request);
-    Task UpdateUserRoleAsync(int userId, int roleId);
-    Task LockUserAsync(int userId);
-    Task UnlockUserAsync(int userId);
+    Task<AuthResponseDto?> AuthenticateAsync(string username, string password);
+    Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
+    Task<AuthResponseDto?> CreateLocalUserAsync(int createdByUserId, string username, string email, string? fullName, string password, int roleId, int? departmentId);
 }

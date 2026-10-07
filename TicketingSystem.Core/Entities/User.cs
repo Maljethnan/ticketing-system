@@ -1,40 +1,51 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TicketingSystem.Core.Entities;
 
 public class User
 {
-    public int UserId { get; set; }
-
-    [Required, MaxLength(100)]
-    public string UserName { get; set; } = string.Empty;
-
-    [MaxLength(200)]
-    public string? Email { get; set; }
+    public int Id { get; set; }
 
     [Required]
-    public string PasswordHash { get; set; } = string.Empty;
+    [StringLength(100)]
+    public string Username { get; set; } = string.Empty;
 
-    [MaxLength(20)]
-    public string? PhoneNumber { get; set; }
+    [Required]
+    [EmailAddress]
+    [StringLength(255)]
+    public string Email { get; set; } = string.Empty;
 
-    public int? SubDeptId { get; set; }
-    public SubDepartment? SubDepartment { get; set; }
+    [StringLength(200)]
+    public string? FullName { get; set; }
+
+    [Column(TypeName = "nvarchar(max)")]
+    public string? PasswordHash { get; set; }
+
+    public int RoleId { get; set; }
+    public virtual Role Role { get; set; } = null!;
+
+    public int? GeneralDeptId { get; set; }
+    public virtual GeneralDepartment? GeneralDepartment { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// هل المستخدم مسجل من Active Directory؟
+    /// إذا كان true → لا يحتاج كلمة مرور محلية
+    /// </summary>
+    public bool IsAdUser { get; set; } = false;
+
+    /// <summary>
+    /// هل يجب على المستخدم تغيير كلمة المرور عند أول دخول؟
+    /// يفعّل فقط عند إنشاء مستخدم محلي بواسطة المدير العام
+    /// </summary>
+    public bool MustChangePassword { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
-    public bool IsActive { get; set; } = true;
-    public bool IsLocked { get; set; } = false;
 
-    // MFA
-    public string? TfaSecret { get; set; }
-    public bool TfaEnabled { get; set; } = false;
-
-    // Password Policy
-    public DateTime? PasswordChangedAt { get; set; }
-    public int FailedLoginAttempts { get; set; } = 0;
-    public DateTime? LockedUntil { get; set; }
-
-    // Navigation
-    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    // Navigation properties
+    public virtual ICollection<Ticket> CreatedTickets { get; set; } = new List<Ticket>();
+    public virtual ICollection<Ticket> AssignedTickets { get; set; } = new List<Ticket>();
 }
