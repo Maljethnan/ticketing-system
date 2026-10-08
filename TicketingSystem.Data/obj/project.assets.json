@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 3,
   "targets": {
     "net8.0": {
       "Azure.Core/1.41.0": {
@@ -3403,7 +3403,7 @@
     ]
   },
   "packageFolders": {
-    "/home/codespace/.nuget/packages/": {}
+    "/tmp/dotnetcli/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
@@ -3411,11 +3411,11 @@
       "projectUniqueName": "/workspaces/ticketing-system/TicketingSystem.Data/TicketingSystem.Data.csproj",
       "projectName": "TicketingSystem.Data",
       "projectPath": "/workspaces/ticketing-system/TicketingSystem.Data/TicketingSystem.Data.csproj",
-      "packagesPath": "/home/codespace/.nuget/packages/",
+      "packagesPath": "/tmp/dotnetcli/.nuget/packages/",
       "outputPath": "/workspaces/ticketing-system/TicketingSystem.Data/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/codespace/.nuget/NuGet/NuGet.Config"
+        "/tmp/dotnetcli/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -3425,7 +3425,6 @@
       },
       "frameworks": {
         "net8.0": {
-          "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
             "/workspaces/ticketing-system/TicketingSystem.Core/TicketingSystem.Core.csproj": {
@@ -3444,11 +3443,10 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.400"
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net8.0": {
-        "framework": "net8.0",
         "targetAlias": "net8.0",
         "dependencies": {
           "Microsoft.EntityFrameworkCore.SqlServer": {
@@ -3471,22 +3469,12 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.31, 8.0.31]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.31, 8.0.31]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.401/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.318/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

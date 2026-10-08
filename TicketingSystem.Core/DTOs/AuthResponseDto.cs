@@ -9,4 +9,5 @@ public class AuthResponseDto
     public string RoleName { get; set; } = string.Empty;
     public bool IsAdUser { get; set; }
     public bool MustChangePassword { get; set; }
+    public string? Token { get; set; }
 }

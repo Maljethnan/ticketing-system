@@ -55,6 +55,7 @@ public static class SeedData
                 Username = "admin",
                 Email = "admin@nazaha.gov.sa",
                 PasswordHash = adminHash,
+                RoleId = 3,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
             }

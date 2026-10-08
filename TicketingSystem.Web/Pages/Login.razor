@@ -61,10 +61,14 @@
             {
                 _requiresMfa = true;
             }
+            else if (result.User != null)
+            {
+                await _authService.SetCurrentUserAsync(result.User, result.Token);
+                Navigation.NavigateTo("/");
+            }
             else
             {
-                await _authService.SetCurrentUserAsync(result.User);
-                Navigation.NavigateTo("/");
+                _error = "Invalid credentials";
             }
         }
         catch (UnauthorizedAccessException)
@@ -79,8 +83,15 @@
         try
         {
             var result = await ApiClient.LoginAsync(_username, _password, _tfaCode);
-            await _authService.SetCurrentUserAsync(result.User);
-            Navigation.NavigateTo("/");
+            if (result.User != null)
+            {
+                await _authService.SetCurrentUserAsync(result.User, result.Token);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _error = "Invalid verification code";
+            }
         }
         catch { _error = "Invalid verification code"; }
     }

@@ -1,0 +1,132 @@
+===============================================================================
+مخطط المكونات والعلاقات داخل نظام TicketingSystem
+الإصدار: 2.0 | تاريخ التحديث: 2026-10-08
+===============================================================================
+
+1) وصف المكونات
+
+A. TicketingSystem.Core
+- يحتوي على النموذج domain
+- يصف الكيانات الأساسية للنظام
+- يحوي DTOs وواجهات الخدمات
+- يعتبر الطبقة الأعلى في المعمارية
+
+B. TicketingSystem.Data
+- يعرّف السياق الرئيسي AppDbContext
+- يحتوي على إعدادات EF Core
+- يضيف البيانات الافتراضية الأولية
+- يحدد العلاقات بين الكيانات
+
+C. TicketingSystem.API
+- النقطة الوحيدة للتفاعل الخارجي
+- يستخدم JWT وLDAP
+- يحوي Controllers وServices وMiddleware
+- يستقبل طلبات Web / Frontend ويُرجع JSON
+
+D. TicketingSystem.Web
+- واجهة المستخدم باستخدام Blazor Server
+- يطلب البيانات من API ويعرضها للمستخدم
+- لا يحتوي على منطق العمل الأساسي بل فقط واجهة عرض
+
+E. Database
+- ملف SQL Server setup
+- يحدد الجداول والقيود والمفاتيح
+- يعرّف الهياكل الأساسية للنظام
+
+2) مخطط العلاقات بين الكيانات
+
+User
+  |- Role (من خلال UserRole)
+  |- GeneralDepartment
+  |- UserDepartmentAccess -> SubDepartment -> GeneralDepartment
+  |- CreatedTickets
+  |- AssignedTickets
+  |- TicketComments
+  |- TicketAttachments
+  |- AuditLogs
+
+Role
+  |- UserRoles
+  |- RolePermissions
+
+GeneralDepartment
+  |- SubDepartments
+  |- Users
+
+SubDepartment
+  |- UserDepartmentAccess
+  |- Tickets (as CreatorDeptId)
+
+SystemEntity
+  |- Tickets
+
+IssueType
+  |- Tickets
+
+Priority
+  |- Tickets
+  |- EscalationRule
+
+TicketStatus
+  |- Tickets
+
+Ticket
+  |- Creator (User)
+  |- AssignedToUser (User)
+  |- CreatorDepartment (SubDepartment)
+  |- System
+  |- IssueType
+  |- Priority
+  |- Status
+  |- Comments
+  |- Attachments
+  |- StatusHistory
+  |- TicketAccessGrant
+
+TicketComment
+  |- Ticket
+  |- Sender (User)
+  |- ParentComment
+  |- Replies
+  |- Attachments
+
+TicketAttachment
+  |- Ticket
+  |- Comment
+  |- UploadedBy (User)
+
+TicketAccessGrant
+  |- Ticket
+  |- User
+  |- GrantedByUser (User)
+
+EscalationRule
+  |- Priority
+
+EscalationLog
+  |- Ticket
+  |- User
+
+AuditLog
+  |- User
+
+3) ملاحظة عن الاتجاه المنطقي للعلاقات
+
+- العلاقة من User إلى Ticket في حالة منشئ التذكرة أو مكلف بها
+- العلاقة من Ticket إلى Comment / Attachment تعكس ارتباط التذكرة بالمحتوى المرفق
+- العلاقة بين TicketAccessGrant و User تسمح بمنح صلاحية مشاهدة أو تعديل محدودة
+- العلاقات بين Role و UserRole تدعم نظام الصلاحيات داخل النظام
+
+4) الخلاصة
+
+جميع المكونات تعمل كوحدة منسجمة، لكن كل طبقة لها مسؤولية محددة:
+- Core: النماذج والواجهات
+- Data: الوصول للبيانات
+- API: منطق الخدمات
+- Web: العرض والواجهة
+
+هذا الفصل يوضح كيف تتفاعل العناصر الداخلية للنظام بطريقة منظمة وقابلة للتوسع.
+
+===============================================================================
+نهاية الملف
+===============================================================================

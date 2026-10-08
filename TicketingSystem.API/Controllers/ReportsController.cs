@@ -29,7 +29,7 @@ public class ReportsController : ControllerBase
         var slaBreached = await _context.Tickets.CountAsync(t => t.IsSLABreached && t.StatusId <= 3);
         var avgResolutionHours = await _context.Tickets.Where(t => t.StatusId == 5 && t.ClosedAt.HasValue).Select(t => (t.ClosedAt.Value - t.CreatedAt).TotalHours).AverageAsync();
         var topSystem = await _context.Tickets.Include(t => t.System).Where(t => !t.IsDeleted).GroupBy(t => t.SystemId).OrderByDescending(g => g.Count()).Select(g => g.First().System.SystemName).FirstOrDefaultAsync();
-        var bestSpecialist = await _context.Tickets.Where(t => t.StatusId == 5 && t.AssignedTo.HasValue).GroupBy(t => t.AssignedTo.Value).Join(_context.Users, g => g.Key, u => u.UserId, (g, u) => new { UserName = u.UserName, AvgHours = g.Average(t => (t.ClosedAt!.Value - t.CreatedAt).TotalHours) }).OrderBy(x => x.AvgHours).Select(x => x.UserName).FirstOrDefaultAsync();
+        var bestSpecialist = await _context.Tickets.Where(t => t.StatusId == 5 && t.AssignedTo.HasValue).GroupBy(t => t.AssignedTo.Value).Join(_context.Users, g => g.Key, u => u.Id, (g, u) => new { Username = u.Username, AvgHours = g.Average(t => (t.ClosedAt!.Value - t.CreatedAt).TotalHours) }).OrderBy(x => x.AvgHours).Select(x => x.Username).FirstOrDefaultAsync();
         return Ok(new { OpenCount = openCount, InProgressCount = inProgressCount, ClosedCount = closedThisMonth, SLABreachedCount = slaBreached, AvgResolutionHours = Math.Round(avgResolutionHours, 1), TopAffectedSystem = topSystem ?? "N/A", BestPerformer = bestSpecialist ?? "N/A" });
     }
 
@@ -75,7 +75,7 @@ public class ReportsController : ControllerBase
         var query = _context.Tickets.Where(t => t.AssignedTo.HasValue && !t.IsDeleted);
         if (from.HasValue) query = query.Where(t => t.CreatedAt >= from.Value);
         if (to.HasValue) query = query.Where(t => t.CreatedAt <= to.Value);
-        return Ok(await query.GroupBy(t => t.AssignedTo.Value).Join(_context.Users, g => g.Key, u => u.UserId, (g, u) => new { SpecialistName = u.UserName, TotalAssigned = g.Count(), ClosedCount = g.Count(t => t.StatusId == 5), OpenCount = g.Count(t => t.StatusId <= 3), AvgResolutionHours = g.Where(t => t.StatusId == 5 && t.ClosedAt.HasValue).Select(t => (t.ClosedAt.Value - t.CreatedAt).TotalHours).DefaultIfEmpty(0.0).Average(), SLABreachedCount = g.Count(t => t.IsSLABreached) }).OrderByDescending(p => p.ClosedCount).ToListAsync());
+        return Ok(await query.GroupBy(t => t.AssignedTo.Value).Join(_context.Users, g => g.Key, u => u.Id, (g, u) => new { SpecialistName = u.Username, TotalAssigned = g.Count(), ClosedCount = g.Count(t => t.StatusId == 5), OpenCount = g.Count(t => t.StatusId <= 3), AvgResolutionHours = g.Where(t => t.StatusId == 5 && t.ClosedAt.HasValue).Select(t => (t.ClosedAt.Value - t.CreatedAt).TotalHours).DefaultIfEmpty(0.0).Average(), SLABreachedCount = g.Count(t => t.IsSLABreached) }).OrderByDescending(p => p.ClosedCount).ToListAsync());
     }
 
     [HttpGet("daily-trend")]
@@ -106,7 +106,7 @@ public class ReportsController : ControllerBase
         foreach (var t in tickets)
         {
             var hours = t.ClosedAt.HasValue ? ((t.ClosedAt.Value - t.CreatedAt).TotalHours).ToString("F1") : "";
-            csv.AppendLine($"{EscapeCsv(t.TicketNumber)},{EscapeCsv(t.Title)},{EscapeCsv(t.System?.SystemName ?? "")},{EscapeCsv(t.IssueType?.TypeName ?? "")},{EscapeCsv(t.Priority?.PriorityName ?? "")},{EscapeCsv(t.Status?.ArabicName ?? "")},{EscapeCsv(t.Creator?.UserName ?? "")},{EscapeCsv(t.AssignedToUser?.UserName ?? "")},{t.CreatedAt:yyyy-MM-dd HH:mm},{t.ClosedAt?.ToString("yyyy-MM-dd HH:mm")},{hours}");
+            csv.AppendLine($"{EscapeCsv(t.TicketNumber)},{EscapeCsv(t.Title)},{EscapeCsv(t.System?.SystemName ?? "")},{EscapeCsv(t.IssueType?.TypeName ?? "")},{EscapeCsv(t.Priority?.PriorityName ?? "")},{EscapeCsv(t.Status?.ArabicName ?? "")},{EscapeCsv(t.Creator?.Username ?? "")},{EscapeCsv(t.AssignedToUser?.Username ?? "")},{t.CreatedAt:yyyy-MM-dd HH:mm},{t.ClosedAt?.ToString("yyyy-MM-dd HH:mm")},{hours}");
         }
         Response.Headers["Content-Disposition"] = $"attachment; filename=tickets_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv");

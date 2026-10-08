@@ -1,4 +1,6 @@
 @page "/tickets/create"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject ApiClient ApiClient
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager Navigation

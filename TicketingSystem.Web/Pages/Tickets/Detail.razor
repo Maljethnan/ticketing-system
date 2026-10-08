@@ -1,4 +1,6 @@
 @page "/tickets/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject ApiClient ApiClient
 @inject AuthService AuthService
 @using Microsoft.AspNetCore.Components.Forms
@@ -79,7 +81,7 @@
                     @if (_ticket.StatusName == "Resolved")
                     {
                         <button class="btn btn-success" @onclick="ApproveClosure">Approve Closure</button>
-                        <button class="btn btn-warning" @onclick="() => _showReopenDialog = true">Reopen</button>
+                        <button class="btn btn-warning" @onclick="ReopenTicket">Reopen</button>
                     }
                 </section>
             }
@@ -95,7 +97,6 @@
     private List<CommentDto>? _comments;
     private string _newComment = "";
     private bool _isCreator;
-    private bool _showReopenDialog;
     private string _reopenReason = "";
 
     protected override async Task OnInitializedAsync()
@@ -123,7 +124,6 @@
     private async Task ReopenTicket()
     {
         await ApiClient.ReopenTicketAsync(Id, _reopenReason);
-        _showReopenDialog = false;
         _ticket = await ApiClient.GetTicketAsync(Id);
     }
 

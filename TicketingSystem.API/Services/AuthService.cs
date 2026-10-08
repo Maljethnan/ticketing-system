@@ -1,27 +1,24 @@
 using System.DirectoryServices.Protocols;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using System.Net;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Core.Entities;
 using TicketingSystem.Core.DTOs;
 using TicketingSystem.Core.Interfaces;
 using TicketingSystem.Data.Context;
-using TicketingSystem.API.Dtos;
 
 namespace TicketingSystem.API.Services;
 
-/// <summary>
-/// خدمة المصادقة — تدعم مسارين:
-/// 1. LDAP: التحقق من المستخدم عبر دليل Active Directory
-/// 2. Local: مصادقة المستخدمين المسجلين محليًا (إنشاؤهم حصريًا بواسطة المدير العام)
-/// </summary>
 public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
 
-    // إعدادات LDAP من متغيرات البيئة
     private string LdapServer => _config["LdapSettings:Server"] ?? "ad.company.local";
     private int LdapPort => int.Parse(_config["LdapSettings:Port"] ?? "389");
     private string LdapBaseDn => _config["LdapSettings:BaseDn"] ?? "DC=company,DC=local";
@@ -36,55 +33,76 @@ public class AuthService : IAuthService
     }
 
     // ================================================================
-    // المسار الأول: مصادقة LDAP (للمستخدمين الموجودين في AD)
+    // مصادقة المستخدم عبر LDAP
     // ================================================================
 
     public async Task<AuthResponseDto?> AuthenticateAsync(string username, string password)
     {
         try
         {
-            bool isValid = await ValidateLdapCredentialsAsync(request.Username, request.Password);
-
-            if (!isValid)
-                return new AuthResponseDto { Success = false, Message = "اسم المستخدم أو كلمة المرور غير صحيحة" };
-
+            var normalizedUserName = username.Trim();
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Username || u.Username == request.Username);
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Username == normalizedUserName || u.Email == normalizedUserName);
 
-            if (user == null)
+            if (user != null && !string.IsNullOrWhiteSpace(user.PasswordHash) && VerifyStoredPassword(password, user.PasswordHash))
             {
-                user = await CreateLocalUserFromLdapAsync(request.Username);
-            }
+                user.LastLoginAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user);
-
-            return new AuthResponseDto
-            {
-                Success = true,
-                Token = token,
-                User = new UserDto
+                return new AuthResponseDto
                 {
-                    Id = user.Id,
+                    UserId = user.Id,
                     Username = user.Username,
                     Email = user.Email,
                     FullName = user.FullName,
-                    RoleCode = user.RoleCode,
-                    DepartmentId = user.DepartmentId
-                },
-                Message = "تم تسجيل الدخول بنجاح"
+                    RoleName = user.Role?.RoleName ?? "",
+                    IsAdUser = user.IsAdUser,
+                    MustChangePassword = user.MustChangePassword,
+                    Token = GenerateJwtToken(user)
+                };
+            }
+
+            var isValidViaLdap = await ValidateLdapCredentialsAsync(normalizedUserName, password);
+            if (!isValidViaLdap)
+                return null;
+
+            user ??= await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Username == normalizedUserName || u.Email == normalizedUserName);
+
+            if (user == null)
+            {
+                user = await CreateLocalUserFromLdapAsync(normalizedUserName);
+                await _context.Entry(user).Reference(u => u.Role).LoadAsync();
+            }
+
+            user.LastLoginAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FullName = user.FullName,
+                RoleName = user.Role?.RoleName ?? "",
+                IsAdUser = user.IsAdUser,
+                MustChangePassword = user.MustChangePassword,
+                Token = GenerateJwtToken(user)
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "خطأ في المصادقة عبر LDAP للمستخدم: {Username}", request.Username);
-            return new AuthResponseDto { Success = false, Message = "حدث خطأ أثناء الاتصال بالدليل النشط" };
+            _logger.LogError(ex, "خطأ في المصادقة للمستخدم: {Username}", username);
+            return null;
         }
     }
 
     /// <summary>
     /// التحقق من صحة بيانات الاعتماد عبر بروتوكول LDAP
     /// </summary>
-    private async Task<bool> ValidateLdapCredentialsAsync(string username, string password)
+    private Task<bool> ValidateLdapCredentialsAsync(string username, string password)
     {
         try
         {
@@ -110,7 +128,7 @@ public class AuthService : IAuthService
             SearchResponse searchResponse = (SearchResponse)connection.SendRequest(searchRequest);
 
             if (searchResponse.Entries.Count == 0)
-                return false;
+                return Task.FromResult(false);
 
             // محاولة الربط باسم المستخدم وكلمة المرور (Authenticated Bind)
             var bindConnection = new LdapConnection(new LdapDirectoryIdentifier(LdapServer, LdapPort));
@@ -119,12 +137,12 @@ public class AuthService : IAuthService
             bindConnection.SessionOptions.ProtocolVersion = 3;
             bindConnection.Bind();
 
-            return true;
+            return Task.FromResult(true);
         }
         catch (LdapException ex)
         {
             _logger.LogWarning(ex, "فشل التحقق من LDAP للمستخدم: {Username}", username);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -133,7 +151,7 @@ public class AuthService : IAuthService
     /// </summary>
     private async Task<User> CreateLocalUserFromLdapAsync(string username)
     {
-        var role = await _context.Roles.FirstOrDefaultAsync(r => r.Code == "EMP");
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName.Contains("Employee", StringComparison.OrdinalIgnoreCase));
         if (role == null)
             throw new InvalidOperationException("دور Employee غير موجود — تأكد من تهيئة الأدوار");
 
@@ -143,7 +161,7 @@ public class AuthService : IAuthService
             Email = $"{username}@company.local",
             FullName = username,
             PasswordHash = null,
-            RoleId = role.Id,
+            RoleId = role.RoleId,
             IsActive = true,
             IsAdUser = true,
             MustChangePassword = false,
@@ -158,58 +176,42 @@ public class AuthService : IAuthService
     }
 
     // ================================================================
-    // المسار الثاني: إنشاء مستخدم جديد (حصريًا للمدير العام GM)
+    // إنشاء مستخدم جديد بواسطة المدير العام
     // ================================================================
 
-    public async Task<AuthResponseDto?> CreateLocalUserAsync(int createdByUserId, string username, string email, string? fullName, string password, int roleId, int? departmentId)
+    public async Task<AuthResponseDto?> CreateLocalUserAsync(
+        int createdByUserId, string username, string email, string? fullName,
+        string password, int roleId, int? departmentId)
     {
         try
         {
-            // 1. التحقق من عدم تكرار البريد أو اسم المستخدم
             var existing = await _context.Users
-                .FirstOrDefaultAsync(u =>
-                    u.Email == request.Email || u.Username == request.Username);
+                .FirstOrDefaultAsync(u => u.Email == email || u.Username == username);
 
             if (existing != null)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "البريد الإلكتروني أو اسم المستخدم مستخدم بالفعل"
-                };
+                return null;
 
-            // 2. تشفير كلمة المرور الافتراضية التي اختارها المدير
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.DefaultPassword);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-            // 3. تحديد الدور المطلوب
-            var role = await _context.Roles.FindAsync(request.RoleId);
+            var role = await _context.Roles.FindAsync(roleId);
             if (role == null)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "الدور المحدد غير موجود"
-                };
+                return null;
 
-            // 4. التحقق من وجود الإدارة (إذا تم تحديدها)
-            if (request.DepartmentId.HasValue)
+            if (departmentId.HasValue)
             {
-                var dept = await _context.Departments.FindAsync(request.DepartmentId.Value);
+                var dept = await _context.GeneralDepartments.FindAsync(departmentId.Value);
                 if (dept == null)
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "الإدارة المحددة غير موجودة"
-                    };
+                    return null;
             }
 
-            // 5. إنشاء المستخدم بحالة "يجب تغيير كلمة المرور"
             var user = new User
             {
-                Username = request.Username,
-                Email = request.Email,
-                FullName = request.FullName,
+                Username = username,
+                Email = email,
+                FullName = fullName,
                 PasswordHash = passwordHash,
-                RoleId = role.Id,
-                DepartmentId = request.DepartmentId,
+                RoleId = roleId,
+                GeneralDeptId = departmentId,
                 IsActive = true,
                 IsAdUser = false,
                 MustChangePassword = true,
@@ -219,111 +221,32 @@ public class AuthService : IAuthService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // 6. تسجيل الحدث في Audit Log
-            await LogAuditActionAsync(-1, "USER_CREATED_BY_ADMIN",
-                $"المدير أنشأ مستخدمًا جديدًا: {request.Username} | الدور: {role.Name}");
+            await LogAuditActionAsync(createdByUserId, "USER_CREATED_BY_ADMIN",
+                $"المدير أنشأ مستخدمًا جديدًا: {username} | الدور: {role.RoleName}");
 
             _logger.LogInformation("المدير أنشأ مستخدمًا جديدًا: {Username} | الدور: {RoleName}",
-                request.Username, role.Name);
+                username, role.RoleName);
 
             return new AuthResponseDto
             {
-                Success = true,
-                Message = $"تم إنشاء حساب المستخدم '{request.Username}' بنجاح — يجب عليه تغيير كلمة المرور عند أول دخول"
+                UserId = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FullName = user.FullName,
+                RoleName = role.RoleName,
+                IsAdUser = false,
+                MustChangePassword = true
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "خطأ في إنشاء المستخدم الجديد بواسطة المدير");
-            return new AuthResponseDto
-            {
-                Success = false,
-                Message = "حدث خطأ أثناء إنشاء الحساب"
-            };
+            return null;
         }
     }
 
     // ================================================================
-    // مصادقة محلية (للمستخدمين المسجلين بدون AD)
-    // ================================================================
-
-    AuthResponseDto? AuthenticateLocalAsync(LoginRequestDto request)
-    {
-        try
-        {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u =>
-                    (u.Email == request.Username || u.Username == request.Username)
-                    && u.IsAdUser == false);
-
-            if (user == null || user.PasswordHash == null)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "المستخدم غير موجود أو يستخدم مصادقة AD"
-                };
-
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "كلمة المرور غير صحيحة"
-                };
-
-            if (!user.IsActive)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "حسابك معطل — تواصل مع المدير"
-                };
-
-            // ⚠️ إذا كان يجب تغيير كلمة المرور، نرفض إصدار Token عادي
-            if (user.MustChangePassword)
-            {
-                return new AuthResponseDto
-                {
-                    Success = true,
-                    MustChangePassword = true,
-                    User = new UserDto
-                    {
-                        Id = user.Id,
-                        Username = user.Username,
-                        Email = user.Email,
-                        FullName = user.FullName,
-                        RoleCode = user.RoleCode,
-                        DepartmentId = user.DepartmentId
-                    },
-                    Message = "مرحبًا بك! يرجى تغيير كلمة المرور قبل المتابعة"
-                };
-            }
-
-            var token = GenerateJwtToken(user);
-
-            return new AuthResponseDto
-            {
-                Success = true,
-                Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    RoleCode = user.RoleCode,
-                    DepartmentId = user.DepartmentId
-                },
-                Message = "تم تسجيل الدخول بنجاح"
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "خطأ في المصادقة المحلية للمستخدم: {Username}", request.Username);
-            return new AuthResponseDto { Success = false, Message = "حدث خطأ أثناء تسجيل الدخول" };
-        }
-    }
-
-    // ================================================================
-    // تغيير كلمة المرور (إجباري عند أول دخول)
+    // تغيير كلمة المرور
     // ================================================================
 
     public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
@@ -332,31 +255,16 @@ public class AuthService : IAuthService
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "المستخدم غير موجود"
-                };
+                return false;
 
-            // التحقق من كلمة المرور الحالية (للتأكد من هوية المستخدم)
-            if (user.PasswordHash != null && !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "كلمة المرور الحالية غير صحيحة"
-                };
+            if (user.PasswordHash != null && !VerifyStoredPassword(currentPassword, user.PasswordHash))
+                return false;
 
-            // التحقق من قوة كلمة المرور الجديدة
-            var validation = ValidatePassword(request.NewPassword);
+            var validation = ValidatePassword(newPassword);
             if (!validation.IsValid)
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = string.Join(" | ", validation.Errors)
-                };
+                return false;
 
-            // تحديث كلمة المرور
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             user.MustChangePassword = false;
             user.LastLoginAt = DateTime.UtcNow;
 
@@ -367,24 +275,12 @@ public class AuthService : IAuthService
 
             _logger.LogInformation("تم تغيير كلمة المرور بنجاح: {Username}", user.Username);
 
-            // إصدار Token جديد بعد التغيير
-            var token = GenerateJwtToken(user);
-
-            return new AuthResponseDto
-            {
-                Success = true,
-                Token = token,
-                Message = "تم تغيير كلمة المرور بنجاح"
-            };
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "خطأ في تغيير كلمة المرور للمستخدم: {UserId}", userId);
-            return new AuthResponseDto
-            {
-                Success = false,
-                Message = "حدث خطأ أثناء تغيير كلمة المرور"
-            };
+            return false;
         }
     }
 
@@ -392,10 +288,51 @@ public class AuthService : IAuthService
     // أدوات مشتركة
     // ================================================================
 
+    private static bool VerifyStoredPassword(string password, string? storedHash)
+    {
+        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(storedHash))
+            return false;
+
+        try
+        {
+            if (storedHash.StartsWith("$2") || storedHash.StartsWith("$2a") || storedHash.StartsWith("$2b") || storedHash.StartsWith("$2y"))
+                return BCrypt.Net.BCrypt.Verify(password, storedHash);
+        }
+        catch
+        {
+            // Ignore invalid BCrypt payloads and fall back to PBKDF2 parsing.
+        }
+
+        var parts = storedHash.Split(':', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 3)
+            return false;
+
+        if (!int.TryParse(parts[2], out var iterations) || iterations <= 0)
+            return false;
+
+        try
+        {
+            var salt = Convert.FromBase64String(parts[0]);
+            var expectedHash = Convert.FromBase64String(parts[1]);
+            var generatedHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+            return CryptographicOperations.FixedTimeEquals(generatedHash, expectedHash);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private string GenerateJwtToken(User user)
     {
-        var secretKey = _config["JwtSettings:SecretKey"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
+        var secretKey = _config["Jwt:SecretKey"]
+            ?? _config["JwtSettings:SecretKey"]
+            ?? throw new InvalidOperationException("JWT Secret Key not configured");
+        var issuer = _config["Jwt:Issuer"] ?? _config["JwtSettings:Issuer"] ?? "TicketingSystem";
+        var audience = _config["Jwt:Audience"] ?? _config["JwtSettings:Audience"] ?? "TicketingSystem";
+        var expiryMinutes = _config.GetValue<int>("Jwt:ExpirationMinutes", _config.GetValue<int>("JwtSettings:ExpiryMinutes", 60));
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -403,15 +340,14 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.RoleCode),
-            new Claim("DepartmentId", user.DepartmentId?.ToString() ?? ""),
+            new Claim(ClaimTypes.Role, user.Role?.RoleName ?? ""),
+            new Claim("GeneralDeptId", user.GeneralDeptId?.ToString() ?? ""),
             new Claim("IsAdUser", user.IsAdUser.ToString())
         };
 
-        var expiryMinutes = int.Parse(_config["JwtSettings:ExpiryMinutes"] ?? "60");
         var token = new JwtSecurityToken(
-            issuer: "TicketingSystem",
-            audience: "TicketingSystem",
+            issuer: issuer,
+            audience: audience,
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
             signingCredentials: credentials);
@@ -427,7 +363,7 @@ public class AuthService : IAuthService
             Action = action,
             Details = details,
             IpAddress = "",
-            Timestamp = DateTime.UtcNow
+            LoggedAt = DateTime.UtcNow
         };
 
         _context.AuditLogs.Add(auditLog);
@@ -456,24 +392,6 @@ public class AuthService : IAuthService
         };
     }
 }
-
-// ================================================================
-// DTOs المساعدة
-// ================================================================
-
-public record CreateUserRequestDto(
-    string Username,
-    string Email,
-    string FullName,
-    string DefaultPassword,
-    int RoleId,
-    int? DepartmentId
-);
-
-public record ChangePasswordRequestDto(
-    string CurrentPassword,
-    string NewPassword
-);
 
 public record PasswordValidationResult
 {

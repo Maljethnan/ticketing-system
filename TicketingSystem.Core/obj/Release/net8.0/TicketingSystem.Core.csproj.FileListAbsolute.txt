@@ -1,0 +1,12 @@
+/workspaces/ticketing-system/TicketingSystem.Core/bin/Release/net8.0/TicketingSystem.Core.deps.json
+/workspaces/ticketing-system/TicketingSystem.Core/bin/Release/net8.0/TicketingSystem.Core.dll
+/workspaces/ticketing-system/TicketingSystem.Core/bin/Release/net8.0/TicketingSystem.Core.pdb
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.AssemblyInfoInputs.cache
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.AssemblyInfo.cs
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.csproj.CoreCompileInputs.cache
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.sourcelink.json
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.dll
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/refint/TicketingSystem.Core.dll
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/TicketingSystem.Core.pdb
+/workspaces/ticketing-system/TicketingSystem.Core/obj/Release/net8.0/ref/TicketingSystem.Core.dll

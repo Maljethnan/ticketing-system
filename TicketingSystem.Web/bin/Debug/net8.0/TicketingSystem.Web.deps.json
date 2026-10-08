@@ -31,7 +31,8 @@
       },
       "Microsoft.AspNetCore.Components/8.0.31": {
         "dependencies": {
-          "Microsoft.AspNetCore.Authorization": "8.0.31"
+          "Microsoft.AspNetCore.Authorization": "8.0.31",
+          "Microsoft.AspNetCore.Components.Analyzers": "8.0.31"
         },
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.Components.dll": {
@@ -40,6 +41,7 @@
           }
         }
       },
+      "Microsoft.AspNetCore.Components.Analyzers/8.0.31": {},
       "Microsoft.AspNetCore.Components.Forms/8.0.31": {
         "dependencies": {
           "Microsoft.AspNetCore.Components": "8.0.31"
@@ -56,7 +58,9 @@
           "Microsoft.AspNetCore.Components": "8.0.31",
           "Microsoft.AspNetCore.Components.Forms": "8.0.31",
           "Microsoft.Extensions.DependencyInjection": "8.0.1",
-          "Microsoft.JSInterop": "8.0.31"
+          "Microsoft.Extensions.Primitives": "8.0.0",
+          "Microsoft.JSInterop": "8.0.31",
+          "System.IO.Pipelines": "8.0.0"
         },
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.Components.Web.dll": {
@@ -67,7 +71,8 @@
       },
       "Microsoft.AspNetCore.Connections.Abstractions/8.0.31": {
         "dependencies": {
-          "Microsoft.Extensions.Features": "8.0.31"
+          "Microsoft.Extensions.Features": "8.0.31",
+          "System.IO.Pipelines": "8.0.0"
         },
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.Connections.Abstractions.dll": {
@@ -125,7 +130,8 @@
           "Microsoft.AspNetCore.SignalR.Common": "8.0.31",
           "Microsoft.AspNetCore.SignalR.Protocols.Json": "8.0.31",
           "Microsoft.Extensions.DependencyInjection": "8.0.1",
-          "Microsoft.Extensions.Logging": "8.0.1"
+          "Microsoft.Extensions.Logging": "8.0.1",
+          "System.Threading.Channels": "8.0.0"
         },
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.SignalR.Client.Core.dll": {
@@ -210,7 +216,8 @@
       },
       "Microsoft.Extensions.Options/8.0.2": {
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Primitives": "8.0.0"
         },
         "runtime": {
           "lib/net8.0/Microsoft.Extensions.Options.dll": {
@@ -219,6 +226,7 @@
           }
         }
       },
+      "Microsoft.Extensions.Primitives/8.0.0": {},
       "Microsoft.JSInterop/8.0.31": {
         "runtime": {
           "lib/net8.0/Microsoft.JSInterop.dll": {
@@ -227,6 +235,8 @@
           }
         }
       },
+      "System.IO.Pipelines/8.0.0": {},
+      "System.Threading.Channels/8.0.0": {},
       "TicketingSystem.Core/1.0.0": {
         "runtime": {
           "TicketingSystem.Core.dll": {
@@ -256,6 +266,13 @@
       "sha512": "sha512-ybNJJrOCQm7RFsGYVaBFP/6q+PFlasaRMVblvnxUvvmNZ/IYPwpX2wVX21+1QyU8gmho9XC/4coJJBJJN89gQA==",
       "path": "microsoft.aspnetcore.components/8.0.31",
       "hashPath": "microsoft.aspnetcore.components.8.0.31.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Analyzers/8.0.31": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-z7ZucSag4lR/vKddqeZy+Negx63kp/2WgzrIkTIreXp/skTboFLAj4IopbcZxvxVjn/cu7TQXacL3Fr+0cyUkg==",
+      "path": "microsoft.aspnetcore.components.analyzers/8.0.31",
+      "hashPath": "microsoft.aspnetcore.components.analyzers.8.0.31.nupkg.sha512"
     },
     "Microsoft.AspNetCore.Components.Forms/8.0.31": {
       "type": "package",
@@ -369,12 +386,33 @@
       "path": "microsoft.extensions.options/8.0.2",
       "hashPath": "microsoft.extensions.options.8.0.2.nupkg.sha512"
     },
+    "Microsoft.Extensions.Primitives/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-bXJEZrW9ny8vjMF1JV253WeLhpEVzFo1lyaZu1vQ4ZxWUlVvknZ/+ftFgVheLubb4eZPSwwxBeqS1JkCOjxd8g==",
+      "path": "microsoft.extensions.primitives/8.0.0",
+      "hashPath": "microsoft.extensions.primitives.8.0.0.nupkg.sha512"
+    },
     "Microsoft.JSInterop/8.0.31": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-eQVWMLVOsPie4/hFvG+aJti/buk1D4c8Bc8toE2gBNWJnaa7bVNQ60PDKObfbgXXWk9Psk+7tYAQ/ynqTyp7zw==",
       "path": "microsoft.jsinterop/8.0.31",
       "hashPath": "microsoft.jsinterop.8.0.31.nupkg.sha512"
+    },
+    "System.IO.Pipelines/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FHNOatmUq0sqJOkTx+UF/9YK1f180cnW5FVqnQMvYUN0elp6wFzbtPSiqbo1/ru8ICp43JM1i7kKkk6GsNGHlA==",
+      "path": "system.io.pipelines/8.0.0",
+      "hashPath": "system.io.pipelines.8.0.0.nupkg.sha512"
+    },
+    "System.Threading.Channels/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CMaFr7v+57RW7uZfZkPExsPB6ljwzhjACWW1gfU35Y56rk72B/Wu+sTqxVmGSk4SFUlPc3cjeKND0zktziyjBA==",
+      "path": "system.threading.channels/8.0.0",
+      "hashPath": "system.threading.channels.8.0.0.nupkg.sha512"
     },
     "TicketingSystem.Core/1.0.0": {
       "type": "project",

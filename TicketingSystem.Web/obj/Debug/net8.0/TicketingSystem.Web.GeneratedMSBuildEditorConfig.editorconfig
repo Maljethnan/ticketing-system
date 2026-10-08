@@ -1,14 +1,11 @@
 is_global = true
 build_property.TargetFramework = net8.0
-build_property.TargetFrameworkIdentifier = .NETCoreApp
-build_property.TargetFrameworkVersion = v8.0
 build_property.TargetPlatformMinVersion = 
 build_property.UsingMicrosoftNETSdkWeb = true
 build_property.ProjectTypeGuids = 
 build_property.InvariantGlobalization = 
 build_property.PlatformNeutralAssembly = 
 build_property.EnforceExtendedAnalyzerRules = 
-build_property.EntryPointFilePath = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = TicketingSystem.Web
 build_property.RootNamespace = TicketingSystem.Web
@@ -49,6 +46,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/workspaces/ticketing-system/TicketingSystem.Web/Pages/Login.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspaces/ticketing-system/TicketingSystem.Web/Pages/LoginRedirect.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTG9naW5SZWRpcmVjdC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/workspaces/ticketing-system/TicketingSystem.Web/Pages/Reports.razor]

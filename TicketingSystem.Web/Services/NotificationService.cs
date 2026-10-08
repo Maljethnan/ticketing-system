@@ -18,12 +18,18 @@ public class NotificationService
     public async Task StartAsync(string url, string token)
     {
         _connection = new HubConnectionBuilder()
-            .WithUrl(url + "/notificationHub", opt => opt.AccessTokenProvider = () => Task.FromResult(token))
+            .WithUrl(url + "/notificationHub", opt => opt.AccessTokenProvider = () => Task.FromResult<string?>(token))
             .Build();
 
         _connection.On<NotificationItem>("ReceiveNotification", item => OnNotificationReceived?.Invoke(item));
         await _connection.StartAsync();
     }
 
-    public async Task StopAsync() => await _connection?.StopAsync();
+    public async Task StopAsync()
+    {
+        if (_connection is null)
+            return;
+
+        await _connection.StopAsync();
+    }
 }

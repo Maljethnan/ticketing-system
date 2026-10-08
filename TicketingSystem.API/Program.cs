@@ -3,6 +3,7 @@ using TicketingSystem.Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Data.SqlClient;
 using System.Text;
 using TicketingSystem.API.Middleware;
 using TicketingSystem.API.Services;
@@ -29,7 +30,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-var jwtKey = builder.Configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key not configured");
+var jwtKey = builder.Configuration["Jwt:SecretKey"]
+    ?? builder.Configuration["JwtSettings:SecretKey"]
+    ?? throw new InvalidOperationException("JWT Secret Key not configured");
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? builder.Configuration["JwtSettings:Issuer"] ?? "TicketingSystem";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? builder.Configuration["JwtSettings:Audience"] ?? "TicketingSystem";
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -39,8 +46,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
@@ -69,6 +76,26 @@ builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection
 builder.Services.Configure<PasswordPolicy>(builder.Configuration.GetSection("PasswordPolicy"));
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    for (var attempt = 1; attempt <= 30; attempt++)
+    {
+        try
+        {
+            db.Database.EnsureCreated();
+            break;
+        }
+        catch (SqlException ex) when (attempt < 30)
+        {
+            logger.LogWarning(ex, "Database is not ready yet. Retry {Attempt}/30 in 5 seconds.", attempt);
+            Thread.Sleep(5000);
+        }
+    }
+}
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();

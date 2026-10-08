@@ -1,0 +1,9 @@
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.csproj.AssemblyReference.cache
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/rpswa.dswa.cache.json
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.AssemblyInfoInputs.cache
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.AssemblyInfo.cs
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.csproj.CoreCompileInputs.cache
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.MvcApplicationPartsAssemblyInfo.cs
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.MvcApplicationPartsAssemblyInfo.cache
+/workspaces/ticketing-system/TicketingSystem.API/obj/Release/net8.0/TicketingSystem.API.sourcelink.json

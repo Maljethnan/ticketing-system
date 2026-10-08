@@ -6,23 +6,32 @@ namespace TicketingSystem.Web.Services;
 
 public class AuthService
 {
-    private UserDto? _currentUser;
+    public event Action? AuthStateChanged;
 
-    public async Task<bool> LoginAsync(string username, string password)
+    private UserDto? _currentUser;
+    private string? _token;
+
+    public Task<bool> LoginAsync(string username, string password)
     {
-        // TODO: Call API auth endpoint
-        return true;
+        return Task.FromResult(_currentUser != null && !string.IsNullOrWhiteSpace(_token));
     }
 
-    public async Task SetCurrentUserAsync(UserDto user)
+    public Task SetCurrentUserAsync(UserDto? user, string? token = null)
     {
         _currentUser = user;
+        if (!string.IsNullOrWhiteSpace(token))
+            _token = token;
+
+        AuthStateChanged?.Invoke();
+        return Task.CompletedTask;
     }
 
-    public async Task<UserDto?> GetCurrentUserAsync()
+    public Task<UserDto?> GetCurrentUserAsync()
     {
-        return _currentUser;
+        return Task.FromResult(_currentUser);
     }
+
+    public string? CurrentToken => _token;
 
     public bool IsAuthenticated => _currentUser != null;
 
@@ -33,5 +42,7 @@ public class AuthService
     public void Logout()
     {
         _currentUser = null;
+        _token = null;
+        AuthStateChanged?.Invoke();
     }
 }
