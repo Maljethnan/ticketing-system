@@ -1,0 +1,34 @@
+{
+  "name": "Ticketing System (.NET 9)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:9.0",
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "9.0",
+      "additionalVersions": "8.0"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-mssql.mssql",
+        "GitHub.copilot",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "dotnet.defaultSolution": "**/*.sln",
+        "files.autoSave": "afterDelay",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postCreateCommand": "dotnet restore && dotnet build",
+  "remoteEnv": {
+    "DOTNET_CLI_HOME": "/home/codespace/.dotnetcli"
+  }
+}
