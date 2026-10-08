@@ -1,0 +1,203 @@
+===============================================================================
+مخطط العلاقات بين مكونات النظام
+TicketingSystem
+الإصدار: 2.0 | تاريخ التحديث: 2026-10-08
+===============================================================================
+
+1) توزيع التشغيل: ثلاث حاويات
+
+Frontend container (TicketingSystem.Web)
+      | HTTP / SignalR via Docker network
+      v
+Backend container (TicketingSystem.API, service name: api)
+      | SQL Server protocol via Docker network
+      v
+Database container (SQL Server, service name: db)
+
+تُعرّف الخدمات الثلاث في `docker-compose.yml` وتعمل على شبكة Docker مشتركة.
+يتصل Web بعنوان `http://api:8080`، ويتصل API بعنوان `db,1433`. قاعدة البيانات
+لا تحتاج إلى منفذ منشور على المضيف لتخدم التطبيق.
+
+2) الاعتماد بين مشاريع .NET
+
+TicketingSystem.Web -> TicketingSystem.Core (DTOs)
+TicketingSystem.API -> TicketingSystem.Core + TicketingSystem.Data
+TicketingSystem.Data -> TicketingSystem.Core
+TicketingSystem.Core -> لا يعتمد على مشاريع أخرى
+
+اتصال Web بالـ API يتم عبر HTTP وقت التشغيل، وليس عبر مرجع مشروع إلى API.
+أما API فيستخدم خدمات Core وطبقة Data التي تتعامل مع SQL Server عبر EF Core.
+
+3) العلاقات بين الكيانات الأساسية
+
+3.1 User و Role
+
+User (1) -----< UserRole >----- (N) Role
+
+- UserRole هو جدول وسيط
+- يحدد الدور الذي يملكه المستخدم
+- يتم تعيينه عبر AssignedBy
+
+3.2 User و Department
+
+User (N) ----> GeneralDepartment (1)
+User (N) ----> UserDepartmentAccess (N) ----> SubDepartment (1)
+SubDepartment (N) ----> GeneralDepartment (1)
+
+- كل مستخدم له قسم عام (GeneralDeptId)
+- كما يمكن أن يكون لديه صلاحيات على أقسام فرعية متعددة
+
+3.3 Ticket و User
+
+User (1) ----< Ticket >---- (N) User
+
+- Ticket.CreatorId -> User.Id
+- Ticket.AssignedTo -> User.Id
+
+ويُستخدم هذا لاحقاً في:
+- من قام بإنشاء التذكرة
+- من تم تعيين التذكرة له
+- من لديه حق الموافقة على الإغلاق
+
+3.4 Ticket و System / IssueType / Priority / Status
+
+Ticket (N) ----> SystemEntity (1)
+Ticket (N) ----> IssueType (1)
+Ticket (N) ----> Priority (1)
+Ticket (N) ----> TicketStatus (1)
+
+- كل تذكرة مرتبطة بنظام فني واحد
+- لكل تذكرة نوع مشكلة واحد
+- لكل تذكرة أولوية واحدة
+- لكل تذكرة حالة واحدة
+
+3.5 Ticket و Comments / Attachments
+
+Ticket (1) ----< TicketComment >---- (N) Ticket
+Ticket (1) ----< TicketAttachment >---- (N) Ticket
+TicketComment (1) ----< TicketAttachment >---- (N) TicketComment
+
+- التذكرة يمكن أن تحتوي على تعليقات متعددة
+- كل تعليق يمكن أن يحتوي على مرفقات متعددة
+- المرفق يمكن أن يكون مرتبطاً بالتذكرة أو بالتعليق
+
+3.6 Ticket و Access Grants
+
+Ticket (1) ----< TicketAccessGrant >---- (N) User
+
+- يتيح إعطاء صلاحية خاصة لمستخدم آخر لرؤية التذكرة أو التعامل معها
+- يتم تسجيل GrantedBy و GrantedAt و Reason
+
+3.7 Ticket و Status History
+
+Ticket (1) ----< TicketStatusHistory >---- (N) Ticket
+
+- يسجل التغييرات في حالة التذكرة
+- مفيد لتدقيق النظام ومرحلته الزمنية
+
+4) العلاقات بين Controllers و Services
+
+AuthController
+   -> IAuthService
+      -> AuthService
+         -> AppDbContext
+         -> LDAP / Local DB
+         -> JWT Token Generation
+
+TicketsController
+   -> ITicketService
+      -> TicketService
+         -> AppDbContext
+         -> System / Priority / Ticket / User tables
+
+CommentsController
+   -> AppDbContext
+   -> IPermissionService
+   -> INotificationService
+   -> IAuditService
+
+AttachmentsController
+   -> AppDbContext
+   -> IFileStorageService
+   -> IPermissionService
+   -> IConfiguration
+
+ReportsController
+   -> AppDbContext
+      -> Tickets, Users, Systems, Priorities, Statuses
+
+5) العلاقات بين الخدمات الأساسية
+
+AuthService
+- يتحقق من JWT أو LDAP
+- يقرأ إعدادات المصادقة
+- يضيف المستخدم المحلي عند أول دخول AD
+- يراجع كلمة المرور ويحفظها عبر BCrypt
+
+TicketService
+- ينشئ التذكرة
+- يراجع بياناتها
+- يربطها بالنظام والقسم وأولوية التذكرة
+- يحدّث حالة التذكرة
+- يضيف منح الوصول
+
+PermissionService
+- يتحقق من الأدوار والصلاحيات
+- يحدد ما إذا كان المستخدم قادرًا على رؤية أو تعديل أو الإغلاق أو التعليق
+- يحدد الأقسام والنظم التي يمكن للمستخدم الوصول إليها
+
+NotificationService
+- يرسل تنبيهات إلى المستخدمين عند تغيير الحالة أو تعليق جديد أو تصعيد
+- يعمل عادةً عبر SignalR/Hub
+
+AuditService
+- يسجل العمليات المهمة في AuditLog
+- يوفر سجل تدقيق داخل النظام
+
+6) الدور التنظيمي داخل النظام
+
+- Role: يلعب دور النظام (Employee, SupportSpecialist, SystemManager, DepartmentManager, GeneralManager, Viewer)
+- GeneralDepartment: الإدارة العامة
+- SubDepartment: الإدارة الفرعية
+- UserDepartmentAccess: صلاحية доступа إلى قسم فرعي
+
+7) سيناريو عملي شائع
+
+- موظف يفتح تذكرة في نظام ERP
+- Ticket يربط بالتذكرة: SystemId, IssueTypeId, PriorityId, CreatorId, CreatorDeptId
+- موظف الدعم يلتقطها أو تُسند إليه
+- النظام يرسل تنبيهات من خلال NotificationService
+- الموظف يمكن أن يعلق أو يرفق ملفات
+- عند الإغلاق، تُترجم الحالة إلى Closed/Resolved بحسب منطق العمل
+- يمكن أن يطلب صاحب التذكرة أو المدير الموافقة على الإغلاق
+
+8) العلاقات في ملف SQL Schema
+
+- Users: جدول المستخدمين
+- Roles: جدول الأدوار
+- UserRoles: ربط المستخدم-الدور
+- GeneralDepartments: الإدارات العامة
+- SubDepartments: الإدارات الفرعية
+- UserDepartmentAccess: صلاحيات الوصول للفروع
+- Systems: الأنظمة
+- IssueTypes: أنواع المشكلات
+- Priorities: مستويات الأولوية
+- TicketStatuses: حالات التذاكر
+- Tickets: التذاكر
+- TicketComments: التعليقات
+- TicketAttachments: المرفقات
+- TicketAccessGrants: صلاحيات الوصول على التذكرة
+- EscalationRules: قواعد التصعيد
+- EscalationLogs: سجل التصعيد
+- AuditLogs: سجل الأنشطة
+
+9) أهم الملاحظات
+
+- يجب توحيد اسم الحقول (مثلاً UserName vs Username)
+- بعض العلاقات تحتاج إلى مراجعة مستمرة عند إضافة ميزات جديدة
+- من المنطقي أن يشتمل النظام على نموذج مخطط كامل في المستقبل
+- التوثيق يجب تحديثه عند أي تعديل في الكيانات أو API أو في قاعدة البيانات
+
+===============================================================================
+نهاية الملف
+===============================================================================

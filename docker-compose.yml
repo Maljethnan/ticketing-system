@@ -1,34 +1,23 @@
-version: '3.8'
-
 services:
-  # ========================================
-  # قاعدة البيانات — SQL Server 2022
-  # ========================================
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ticketing-db
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "${DB_PASSWORD:-YourStrong@Passw0rd}"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
       MSSQL_PID: "Developer"
-    ports:
-      - "1433:1433"
     volumes:
       - sql-data:/var/opt/mssql
-      - ./sql-init:/docker-entrypoint-initdb.d
     networks:
       - ticketing-net
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-YourStrong@Passw0rd}" -Q "SELECT 1" || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C -b || exit 1
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 15s
+      retries: 10
       start_period: 30s
 
-  # ========================================
-  # Backend — REST API
-  # ========================================
   api:
     build:
       context: .
@@ -41,19 +30,16 @@ services:
       db:
         condition: service_healthy
     environment:
-      ConnectionStrings__DefaultConnection: "Server=db;Database=TicketingDB;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=TicketingDB;User Id=sa;Password=${DB_PASSWORD:?Set DB_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=True;"
       FileStorage__Path: "/app/uploads"
       FileStorage__BaseUrl: "http://localhost:8080/files"
-      JwtSettings__SecretKey: "${JWT_SECRET:-SuperSecretKeyForLocalDevEnvironment!123}"
+      JwtSettings__SecretKey: "${JWT_SECRET:?Set JWT_SECRET in .env}"
       JwtSettings__ExpiryMinutes: "60"
     volumes:
       - uploads:/app/uploads
     networks:
       - ticketing-net
 
-  # ========================================
-  # Frontend — Blazor Server
-  # ========================================
   web:
     build:
       context: .
@@ -66,7 +52,6 @@ services:
       - api
     environment:
       ApiBaseUrl: "http://api:8080"
-      ConnectionStrings__DefaultConnection: "Server=db;Database=TicketingDB;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;"
     networks:
       - ticketing-net
 

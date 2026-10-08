@@ -1,0 +1,165 @@
+===============================================================================
+وثيقة النظرة العامة للمعمارية التقنية
+TicketingSystem
+الإصدار: 2.0 | تاريخ التحديث: 2026-10-08
+===============================================================================
+
+1) الهدف
+
+هذا المشروع هو نظام لإدارة وتتبع المشكلات التقنية داخل المؤسسة،
+ويهدف إلى تنظيم التذاكر، تعيين المسؤولين، مراقبة SLA، التصعيد،
+وتقديم تقارير إحصائية حول الأداء الفني والإداري.
+
+2) نموذج المعمارية
+
+النظام يعتمد على Clean Architecture / Layered Architecture مع توزيع واضح:
+
+- Core: كيانـات، DTOs، واجهات
+- Data: DbContext، Repositories، Seeders
+- API: Controllers، Services، Middleware، Hubs
+- Web: Pages، Components، Client Services
+
+3) توزيع التشغيل: ثلاث حاويات مستقلة
+
+يُشغَّل النظام في ثلاث حاويات Docker منفصلة تمثل خدمات مستقلة:
+
+- Frontend: تطبيق Blazor Server في حاوية مستقلة، ويُتاح للمستخدمين عبر منفذ الويب.
+- Backend: تطبيق REST API وSignalR في حاوية مستقلة، ويُتاح عبر منفذ API.
+- Database: Microsoft SQL Server في حاوية مستقلة، ولا يُنشر منفذها على المضيف افتراضياً.
+
+تتصل الحاويات عبر شبكة Docker داخلية:
+
+Frontend --HTTP--> Backend (api:8080) --SQL Server--> Database (db:1433)
+
+تستخدم التطبيقات أسماء الخدمات الداخلية `api` و`db` للاتصال بين الحاويات.
+تُحفظ بيانات SQL Server في volume دائم مستقل عن دورة حياة الحاوية، وتُمرر
+كلمة مرور قاعدة البيانات ومفتاح JWT عبر ملف `.env` محلي غير محفوظ في Git.
+
+يُدار التشغيل عبر `docker compose up --build`. ينشئ API قاعدة البيانات
+ومخططها عند البدء باستخدام `EnsureCreated()`. ملف SQL القديم في `Database/`
+ليس مصدر المخطط المعتمد لهذا التشغيل، و`EnsureCreated()` لا يرقّي مخطط قاعدة
+موجودة؛ يلزم اعتماد EF Core Migrations قبل ترقية قواعد التشغيل.
+
+4) مبدأ الاتصال بين الطبقات
+
+- TicketingSystem.Core لا يعتمد على أي طبقة أخرى
+- TicketingSystem.Data يعتمد على Core فقط
+- TicketingSystem.API يعتمد على Core وData
+- TicketingSystem.Web يعتمد على Core للـ DTOs، ويتصل بـ API عبر HTTP؛ ولا يعتمد
+  على API كمشروع أو على Data مباشرة
+
+5) الطبقة Core
+
+تحتوي على:
+- Entities: User, Role, Ticket, TicketComment, TicketAttachment,
+  GeneralDepartment, SubDepartment, TicketStatus, Priority, IssueType,
+  SystemEntity, AuditLog, EscalationRule, EscalationLog, etc.
+- DTOs: CreateTicketDto, LoginRequest, FilterRequest, AuthResponseDto,
+  StatusUpdateRequest, CloseRequest, ReopenRequest
+- Interfaces: IAuthService, ITicketService, IPermissionService,
+  INotificationService, IAuditService, IFileStorageService
+
+الطبقة Core هي مرجع النظام وأساس منطق الأعمال.
+
+6) الطبقة Data
+
+تشمل:
+- AppDbContext
+- DbSet لكل كيان أساسي
+- SeedData لإضافة الأدوار الأولية والموظف الإداري الافتراضي
+- إعدادات العلاقات والـ indexes في OnModelCreating
+
+7) الطبقة API
+
+تحتوي على:
+- Controllers
+  * AuthController
+  * TicketsController
+  * CommentsController
+  * AttachmentsController
+  * ReportsController
+- Services
+  * AuthService
+  * TicketService
+  * PermissionService
+  * NotificationService
+  * AuditService
+  * FileStorageService
+  * EscalationMonitorService
+- Middleware
+  * ErrorHandlingMiddleware
+  * RequestLoggingMiddleware
+- Hubs
+  * NotificationHub
+
+8) الطبقة Web
+
+تحتوي على:
+- Pages: Dashboard, Login, Tickets, Detail, Reports
+- Services: AuthService, NotificationService
+- Components: Shared UI components
+- Styling: CSS/Bootstrap/Blazor styles
+
+9) سير العمل الأساسي
+
+أ) تسجيل الدخول
+- AuthController يستقبل بيانات الدخول
+- AuthService يحقق المستخدم عبر LDAP أو قاعدة البيانات المحلية
+- يتم إنشاء JWT إن نجح التحقق
+- API يطلب الرمز في كل طلب محمي
+
+ب) إنشاء تذكرة
+- TicketController يستقبل CreateTicketDto
+- TicketService يقوم بتعيين النظام، الأولوية، قسم المنشئ، والحالة الأولية
+- يتم حفظ Ticket في SQL Server
+
+ج) تحديث الحالة
+- TicketService يقوم بتحديث StatusId
+- يتم تسجيل الحدث في Audit/History حسب التنفيذ
+
+د) التعليق والملف
+- CommentsController يضيف تعليقًا على Ticket
+- AttachmentsController يضيف ملفًا ويمكن ربطه بالتذكرة أو التعليق
+
+هـ) التقارير
+- ReportsController يجمع البيانات من Ticket, Users, Systems, Priorities, TicketStatus
+- يتم حساب المؤشرات: عدد القضايا المفتوحة، المغلقة، SLA، التوزيع حسب القسم أو النظام
+
+10) العلاقات الفعلية بين المكونات
+
+- المستخدمون ينتمون إلى أدوار من خلال UserRole
+- كل مستخدم قد يملك صلاحيات على أقسام فرعية من خلال UserDepartmentAccess
+- كل تذكرة تختص بنظام، نوع مشكلة، أولوية، وحالة
+- لكل تذكرة تعليقـات ومرفقات
+- لكل تذكرة صلاحيات خاصة قد تُمنح لمستخدمين آخرين عبر TicketAccessGrant
+- نظام التصعيد يقرأ القواعد من EscalationRule ويقوم بالإنذار عبر NotificationService
+
+11) الأمان
+
+- JWTBearer في API
+- Signing key من appsettings.json أو متغيرات البيئة
+- كلمات المرور المحلية محمية بـ BCrypt
+- LDAP متوافق مع Microsoft AD من خلال System.DirectoryServices.Protocols
+
+12) قاعدة البيانات
+
+قاعدة البيانات المستهدفة هي SQL Server 2019+.
+الطبقة Data تستخدم Entity Framework Core عبر AppDbContext.
+
+13) نقاط القوة في البنية الحالية
+
+- فصل واضح للطبقات
+- إمكانية التوسع في الخدمات الجديدة
+- دعم التوثيق والضبط الأمني
+- دعم SignalR للتحديثات الفورية
+- سهولة الصيانة لكل طبقة على حدة
+
+14) ملاحظات مهمة
+
+- بعض السيرورات أو الخدمات تحتاج إلى توحيد في المنطق والاسماء والاستثناءات
+- بعض الحقول أو العلاقات تحتاج إلى مراجعة مستمرة عند إضافة ميزات جديدة
+- التوثيق الحالي يجب تحديثه مع كل إضافة جديدة في النماذج أو API
+
+===============================================================================
+نهاية الملف
+===============================================================================
